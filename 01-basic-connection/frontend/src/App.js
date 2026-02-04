@@ -1,41 +1,69 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import './App.css';
-
 
 const socket = io('http://localhost:4000');
 
 function App() {
- 
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('demo');
-  const [showConcept, setShowConcept] = useState(null); 
+  const [currentLesson, setCurrentLesson] = useState(0);
+  const [showCode, setShowCode] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Lessons data
+  const lessons = [
+    {
+      id: 0,
+      title: "Connection",
+      description: "When a client connects, both server and client know instantly!",
+      serverCode: `io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+});`,
+      clientCode: `socket.on('connect', () => {
+  console.log('Connected!');
+});`,
+      challenge: "Open browser console and see your connection ID!"
+    },
+    {
+      id: 1,
+      title: "Emitting Events",
+      description: "Send custom events from client to server!",
+      serverCode: `socket.on('message', (data) => {
+  console.log('Received:', data);
+});`,
+      clientCode: `socket.emit('message', 'Hello!');`,
+      challenge: "Send a message and watch it appear!"
+    },
+    {
+      id: 2,
+      title: "Receiving Responses",
+      description: "Server can reply back to the client!",
+      serverCode: `socket.emit('response', {
+  text: 'Hello Client!'
+});`,
+      clientCode: `socket.on('response', (data) => {
+  console.log(data.text);
+});`,
+      challenge: "Type a message and get a server response!"
+    }
+  ];
 
   useEffect(() => {
-    // When connected to server
     socket.on('connect', () => {
-      console.log('✅ Connected!', socket.id);
       setIsConnected(true);
-      addSystemMessage('Connected to server! 🎉');
+      addSystemMessage('🎮 Connected to Socket.IO Academy!');
     });
 
-    // When disconnected from server
     socket.on('disconnect', () => {
-      console.log('❌ Disconnected');
       setIsConnected(false);
-      addSystemMessage('Disconnected 😢');
+      addSystemMessage('⚠️ Disconnected from server');
     });
 
-    // When server sends response
     socket.on('response', (data) => {
-      console.log('📨 Response:', data);
       addMessage('Server', data.text, data.timestamp);
     });
-     
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -43,7 +71,6 @@ function App() {
     };
   }, []);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -73,216 +100,244 @@ function App() {
     if (e.key === 'Enter') handleSend();
   };
 
-
-  const codeSnippets = {
-    connection: {
-      title: "📡 Connection",
-      server: `io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-});`,
-      client: `socket.on('connect', () => {
-  console.log('Connected to server!');
-});`,
-      explanation: "When client connects, both server and client know about it instantly!"
-    },
-    emit: {
-      title: "📤 Emitting Events",
-      server: `socket.emit('response', { 
-  text: 'Hello!' 
-});`,
-      client: `socket.emit('message', 'Hello Server!');`,
-      explanation: "emit() sends events. Server → Client or Client → Server!"
-    },
-    listen: {
-      title: "📥 Listening to Events",
-      server: `socket.on('message', (data) => {
-  console.log('Received:', data);
-});`,
-      client: `socket.on('response', (data) => {
-  console.log('Server said:', data);
-});`,
-      explanation: "on() listens for events. Like a subscriber waiting for messages!"
-    }
-  };
-
+  const currentLessonData = lessons[currentLesson];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+    <div className="min-h-screen bg-[#0a0e27] text-white">
       
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-10 animate-pulse-slow"></div>
-      
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        
-  
-        <div className="text-center mb-8">
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-4 drop-shadow-lg">
-            <span className="inline-block animate-bounce-slow">🔌</span>
-            {' '}Socket.IO Connection
-          </h1>
-          <p className="text-white/80 text-lg font-semibold">
-            Learn real-time communication from scratch!
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-        
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border-4 border-white/50">
-            
-            {/* Connection Status */}
-            <div className="mb-6">
-              <div className={`
-                flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-lg
-                ${isConnected 
-                  ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white' 
-                  : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
-                }
-                transform transition-all duration-300 hover:scale-105
-              `}>
-                <div className={`w-4 h-4 rounded-full ${isConnected ? 'bg-white' : 'bg-white/70'} animate-ping`}></div>
-                <div className={`w-4 h-4 rounded-full ${isConnected ? 'bg-white' : 'bg-white/70'} absolute`}></div>
-                {isConnected ? '✅ Connected' : '❌ Disconnected'}
+      {/* Header */}
+      <header className="bg-[#1a1f3a] border-b-2 border-[#2dd4bf] shadow-lg">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-4xl animate-pulse">🔌</div>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">
+                  SOCKET.IO <span className="text-[#2dd4bf]">ACADEMY</span>
+                </h1>
+                <p className="text-sm text-gray-400">Learn Real-Time Communication</p>
               </div>
             </div>
+            
+            <div className="flex items-center gap-4">
+              <div className={`px-4 py-2 rounded-lg font-bold border-2 ${
+                isConnected 
+                  ? 'bg-[#2dd4bf]/20 border-[#2dd4bf] text-[#2dd4bf]' 
+                  : 'bg-red-500/20 border-red-500 text-red-500'
+              }`}>
+                <span className="inline-block w-2 h-2 rounded-full mr-2 animate-pulse" 
+                  style={{ backgroundColor: isConnected ? '#2dd4bf' : '#ef4444' }}></span>
+                {isConnected ? 'ONLINE' : 'OFFLINE'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
 
-            {/* Messages Container */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 h-96 overflow-y-auto mb-4 border-2 border-gray-200 shadow-inner custom-scrollbar">
-              {messages.map((msg) => (
-                <div 
-                  key={msg.id}
-                  className={`
-                    mb-3 p-4 rounded-xl shadow-md transform transition-all duration-300 hover:scale-102
-                    ${msg.sender === 'You' 
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white ml-auto max-w-[80%]' 
-                      : msg.sender === 'System'
-                      ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 mx-auto max-w-[90%] text-center'
-                      : 'bg-white border-2 border-indigo-200 text-gray-800 max-w-[80%]'
-                    }
-                    animate-slide-in
-                  `}
-                >
-                  <div className="font-bold text-sm mb-1 opacity-80">{msg.sender}</div>
-                  <div className="text-base">{msg.text}</div>
-                  <div className="text-xs mt-1 opacity-60">{msg.timestamp}</div>
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-5 gap-6">
+          
+          {/* Left Sidebar - Lessons */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] p-4">
+              <h2 className="text-xl font-bold mb-4 text-[#2dd4bf]">📚 Lessons</h2>
+              <div className="space-y-2">
+                {lessons.map((lesson, index) => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => setCurrentLesson(index)}
+                    className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all ${
+                      currentLesson === index
+                        ? 'bg-[#2dd4bf] text-[#0a0e27]'
+                        : 'bg-[#2a3150] text-gray-300 hover:bg-[#323b5c]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        currentLesson === index ? 'bg-[#0a0e27] text-[#2dd4bf]' : 'bg-[#1a1f3a]'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      <span>{lesson.title}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Progress */}
+              <div className="mt-6 pt-6 border-t border-[#2a3150]">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-400">Progress</span>
+                  <span className="text-[#2dd4bf] font-bold">33%</span>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={!isConnected}
-                placeholder="Type a message..."
-                className="
-                  flex-1 px-6 py-4 rounded-2xl border-2 border-gray-300 
-                  focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 
-                  outline-none transition-all duration-300
-                  disabled:bg-gray-100 disabled:cursor-not-allowed
-                  text-lg font-medium
-                "
-              />
-              <button
-                onClick={handleSend}
-                disabled={!isConnected || !inputMessage.trim()}
-                className="
-                  px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 
-                  text-white font-bold rounded-2xl shadow-lg
-                  hover:shadow-xl hover:scale-105 active:scale-95
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  transition-all duration-300
-                "
-              >
-                Send 🚀
-              </button>
-            </div>
-
-            {/* Quick Tips */}
-            <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
-              <div className="font-bold text-blue-900 mb-2">💡 Try This:</div>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Open this in 2 browser tabs</li>
-                <li>• Send messages and see instant updates!</li>
-                <li>• Check the browser console (F12) for logs</li>
-              </ul>
+                <div className="w-full bg-[#2a3150] rounded-full h-2">
+                  <div className="bg-[#2dd4bf] h-2 rounded-full w-1/3"></div>
+                </div>
+              </div>
             </div>
           </div>
 
-        
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border-4 border-white/50">
-            
-            <h2 className="text-3xl font-black text-gray-800 mb-6 flex items-center gap-3">
-              <span className="text-4xl">📚</span>
-              Learn The Code
-            </h2>
+          {/* Center - Interactive Demo */}
+          <div className="lg:col-span-2">
+            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] overflow-hidden">
+              
+              {/* Lesson Header */}
+              <div className="bg-gradient-to-r from-[#2dd4bf]/20 to-transparent p-6 border-b border-[#2a3150]">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">📡</span>
+                  <h2 className="text-2xl font-black">{currentLessonData.title}</h2>
+                </div>
+                <p className="text-gray-400">{currentLessonData.description}</p>
+              </div>
 
-            {/* Concept Cards */}
-            <div className="space-y-4">
-              {Object.entries(codeSnippets).map(([key, concept]) => (
-                <div 
-                  key={key}
-                  className="
-                    border-2 border-gray-200 rounded-2xl overflow-hidden
-                    hover:border-indigo-400 hover:shadow-xl
-                    transition-all duration-300 cursor-pointer
-                    transform hover:scale-102
-                  "
-                  onClick={() => setShowConcept(showConcept === key ? null : key)}
-                >
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 font-bold text-lg flex items-center justify-between">
-                    {concept.title}
-                    <span className="text-2xl">{showConcept === key ? '🔽' : '▶️'}</span>
+              {/* Robot Character */}
+              <div className="p-6 text-center border-b border-[#2a3150]">
+                <div className="inline-block relative">
+                  <div className="text-8xl animate-bounce-slow">🤖</div>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#2dd4bf] text-[#0a0e27] px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                    Socket Bot
                   </div>
+                </div>
+              </div>
 
-                  {/* Expanded Content */}
-                  {showConcept === key && (
-                    <div className="p-4 bg-gray-50 animate-slide-down">
-                      
-                      {/* Explanation */}
-                      <div className="bg-blue-100 border-l-4 border-blue-500 p-3 mb-4 rounded">
-                        <p className="text-blue-900 font-semibold">{concept.explanation}</p>
-                      </div>
-
-                      {/* Server Code */}
-                      <div className="mb-4">
-                        <div className="text-xs font-bold text-gray-600 mb-2">🖥️ SERVER (backend/index.js)</div>
-                        <pre className="bg-gray-900 text-green-400 p-4 rounded-xl overflow-x-auto text-sm font-mono">
-                          {concept.server}
-                        </pre>
-                      </div>
-
-                      {/* Client Code */}
-                      <div>
-                        <div className="text-xs font-bold text-gray-600 mb-2">💻 CLIENT (src/App.js)</div>
-                        <pre className="bg-gray-900 text-blue-400 p-4 rounded-xl overflow-x-auto text-sm font-mono">
-                          {concept.client}
-                        </pre>
-                      </div>
+              {/* Messages */}
+              <div className="p-6">
+                <div className="bg-[#0a0e27] rounded-xl border-2 border-[#2a3150] p-4 h-64 overflow-y-auto custom-scrollbar mb-4">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                      No messages yet. Try sending one! 👇
                     </div>
+                  ) : (
+                    <>
+                      {messages.map((msg) => (
+                        <div 
+                          key={msg.id}
+                          className={`mb-3 p-3 rounded-lg ${
+                            msg.sender === 'You' 
+                              ? 'bg-[#2dd4bf] text-[#0a0e27] ml-auto max-w-[80%]' 
+                              : msg.sender === 'System'
+                              ? 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-center text-sm'
+                              : 'bg-[#2a3150] max-w-[80%]'
+                          }`}
+                        >
+                          <div className="font-bold text-xs mb-1 opacity-80">{msg.sender}</div>
+                          <div>{msg.text}</div>
+                          <div className="text-xs mt-1 opacity-60">{msg.timestamp}</div>
+                        </div>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
                   )}
                 </div>
-              ))}
-            </div>
 
-            {/* Progress Indicator */}
-            <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-purple-900">Level 1 Progress</span>
-                <span className="text-purple-700 font-bold">33%</span>
+                {/* Input */}
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={!isConnected}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-3 bg-[#2a3150] border-2 border-[#2a3150] rounded-lg focus:border-[#2dd4bf] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!isConnected || !inputMessage.trim()}
+                    className="px-6 py-3 bg-[#2dd4bf] text-[#0a0e27] font-bold rounded-lg hover:bg-[#25b9a5] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
-              <div className="w-full bg-purple-200 rounded-full h-3">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full w-1/3 animate-pulse-slow"></div>
+
+              {/* Challenge */}
+              <div className="p-6 bg-[#2dd4bf]/10 border-t border-[#2a3150]">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <h3 className="font-bold text-[#2dd4bf] mb-1">Challenge:</h3>
+                    <p className="text-sm text-gray-300">{currentLessonData.challenge}</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-purple-700 mt-2">
-                ✅ Connection · ⏳ Rooms · ⏳ Broadcast
-              </p>
             </div>
           </div>
+
+          {/* Right - Code Panel */}
+          <div className="lg:col-span-2">
+            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] overflow-hidden">
+              
+              <div className="bg-[#2a3150] p-4 border-b border-[#323b5c] flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <span>💻</span> Code Editor
+                </h2>
+                <button
+                  onClick={() => setShowCode(!showCode)}
+                  className="px-4 py-2 bg-[#2dd4bf] text-[#0a0e27] rounded-lg font-bold text-sm hover:bg-[#25b9a5] transition-all"
+                >
+                  {showCode ? 'Hide Code' : 'Show Code'}
+                </button>
+              </div>
+
+              {showCode && (
+                <div className="p-6 space-y-6">
+                  
+                  {/* Server Code */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xl">🖥️</span>
+                      <h3 className="font-bold text-[#2dd4bf]">SERVER (backend/index.js)</h3>
+                    </div>
+                    <div className="bg-[#0a0e27] rounded-lg border border-[#2a3150] overflow-hidden">
+                      <div className="bg-[#1a1f3a] px-4 py-2 border-b border-[#2a3150] flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <pre className="p-4 overflow-x-auto text-sm">
+                        <code className="text-[#2dd4bf]">{currentLessonData.serverCode}</code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Client Code */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xl">💻</span>
+                      <h3 className="font-bold text-blue-400">CLIENT (src/App.js)</h3>
+                    </div>
+                    <div className="bg-[#0a0e27] rounded-lg border border-[#2a3150] overflow-hidden">
+                      <div className="bg-[#1a1f3a] px-4 py-2 border-b border-[#2a3150] flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <pre className="p-4 overflow-x-auto text-sm">
+                        <code className="text-blue-400">{currentLessonData.clientCode}</code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="bg-blue-500/10 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 className="font-bold text-blue-400 mb-2">💡 How it works:</h4>
+                    <p className="text-sm text-gray-300">{currentLessonData.description}</p>
+                  </div>
+
+                </div>
+              )}
+
+              {!showCode && (
+                <div className="p-12 text-center text-gray-500">
+                  <div className="text-6xl mb-4">👨‍💻</div>
+                  <p>Click "Show Code" to see the magic! ✨</p>
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
