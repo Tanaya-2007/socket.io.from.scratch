@@ -5,59 +5,84 @@ const socket = io('http://localhost:4000');
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState([]);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [currentLesson, setCurrentLesson] = useState(0);
-  const [showCode, setShowCode] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [messagesSent, setMessagesSent] = useState(0);
   const messagesEndRef = useRef(null);
 
-  // Lessons data
-  const lessons = [
+  const steps = [
     {
       id: 0,
-      title: "Connection",
-      description: "When a client connects, both server and client know instantly!",
-      serverCode: `io.on('connection', (socket) => {
+      title: "Establish Connection",
+      icon: "🔌",
+      description: "When a client connects to the server, both sides know about it instantly. This creates a persistent two-way communication channel.",
+      serverCode: `// Server listens for new connections
+io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  // socket.id = unique identifier
 });`,
-      clientCode: `socket.on('connect', () => {
-  console.log('Connected!');
+      clientCode: `// Client connects automatically
+socket.on('connect', () => {
+  console.log('Connected!', socket.id);
 });`,
-      challenge: "Open browser console and see your connection ID!"
+      task: "Open your browser console (F12) and find your unique socket.id",
+      hint: "Look for the green 'ONLINE' badge above",
+      canComplete: () => isConnected,
+      showDemo: false
     },
     {
       id: 1,
-      title: "Emitting Events",
-      description: "Send custom events from client to server!",
-      serverCode: `socket.on('message', (data) => {
+      title: "Emit Events",
+      icon: "📤",
+      description: "Use emit() to send custom events from client to server. Think of it like sending a message in a specific channel.",
+      serverCode: `// Server receives the event
+socket.on('message', (data) => {
   console.log('Received:', data);
+  // data = whatever client sent
 });`,
-      clientCode: `socket.emit('message', 'Hello!');`,
-      challenge: "Send a message and watch it appear!"
+      clientCode: `// Client sends the event
+socket.emit('message', 'Hello Server!');
+// First param = event name
+// Second param = data to send`,
+      task: "Send at least 3 messages using the terminal below",
+      hint: "Type in the input box and hit Send",
+      canComplete: () => messagesSent >= 3,
+      showDemo: true
     },
     {
       id: 2,
-      title: "Receiving Responses",
-      description: "Server can reply back to the client!",
-      serverCode: `socket.emit('response', {
-  text: 'Hello Client!'
+      title: "Server Response",
+      icon: "📥",
+      description: "Server can send messages back! This creates real-time two-way communication - the foundation of chat apps, live updates, and multiplayer games.",
+      serverCode: `// Server sends response
+socket.emit('response', {
+  text: 'Got your message!',
+  timestamp: Date.now()
 });`,
-      clientCode: `socket.on('response', (data) => {
-  console.log(data.text);
+      clientCode: `// Client receives response
+socket.on('response', (data) => {
+  console.log('Server says:', data.text);
+  // Instant feedback!
 });`,
-      challenge: "Type a message and get a server response!"
+      task: "Send a message and watch the server respond instantly",
+      hint: "Notice how fast the response is - that's WebSocket magic!",
+      canComplete: () => messages.some(m => m.sender === 'Server'),
+      showDemo: true
     }
   ];
 
   useEffect(() => {
     socket.on('connect', () => {
       setIsConnected(true);
-      addSystemMessage('🎮 Connected to Socket.IO Academy!');
+      addSystemMessage('Connected to Socket.IO Server');
     });
 
     socket.on('disconnect', () => {
       setIsConnected(false);
-      addSystemMessage('⚠️ Disconnected from server');
+      addSystemMessage('Disconnected from Server');
     });
 
     socket.on('response', (data) => {
@@ -69,6 +94,7 @@ function App() {
       socket.off('disconnect');
       socket.off('response');
     };
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -93,6 +119,7 @@ function App() {
       socket.emit('message', inputMessage);
       addMessage('You', inputMessage);
       setInputMessage('');
+      setMessagesSent(prev => prev + 1);
     }
   };
 
@@ -100,33 +127,57 @@ function App() {
     if (e.key === 'Enter') handleSend();
   };
 
-  const currentLessonData = lessons[currentLesson];
+  const completeStep = () => {
+    if (!completedSteps.includes(currentStep)) {
+      setCompletedSteps(prev => [...prev, currentStep]);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      setMessages([]);
+      setMessagesSent(0);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const currentStepData = steps[currentStep];
+  const canCompleteCurrentStep = currentStepData.canComplete();
+  const isStepCompleted = completedSteps.includes(currentStep);
 
   return (
-    <div className="min-h-screen bg-[#0a0e27] text-white">
+    <div className="min-h-screen bg-[#0a0f1e] text-white">
       
       {/* Header */}
-      <header className="bg-[#1a1f3a] border-b-2 border-[#2dd4bf] shadow-lg">
+      <header className="relative z-50 bg-[#0d1529] border-b border-[#1a2744]">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
+            
             <div className="flex items-center gap-4">
-              <div className="text-4xl animate-pulse">🔌</div>
+              <div className="text-4xl">⚡</div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight">
-                  SOCKET.IO <span className="text-[#2dd4bf]">ACADEMY</span>
+                <h1 className="text-3xl font-bold">
+                  <span className="text-white">SOCKET</span>
+                  <span className="text-[#6495ed]">/</span>
+                  <span className="text-[#6495ed]">MATRIX</span>
                 </h1>
-                <p className="text-sm text-gray-400">Learn Real-Time Communication</p>
+                <p className="text-sm text-gray-400">Interactive Socket.IO Tutorial</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className={`px-4 py-2 rounded-lg font-bold border-2 ${
-                isConnected 
-                  ? 'bg-[#2dd4bf]/20 border-[#2dd4bf] text-[#2dd4bf]' 
-                  : 'bg-red-500/20 border-red-500 text-red-500'
-              }`}>
-                <span className="inline-block w-2 h-2 rounded-full mr-2 animate-pulse" 
-                  style={{ backgroundColor: isConnected ? '#2dd4bf' : '#ef4444' }}></span>
+            <div className={`px-5 py-2 rounded-lg text-sm font-bold border ${
+              isConnected 
+                ? 'bg-green-500/10 border-green-500 text-green-400' 
+                : 'bg-red-500/10 border-red-500 text-red-400'
+            }`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 {isConnected ? 'ONLINE' : 'OFFLINE'}
               </div>
             </div>
@@ -134,101 +185,123 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-5 gap-6">
-          
-          {/* Left Sidebar - Lessons */}
-          <div className="lg:col-span-1">
-            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] p-4">
-              <h2 className="text-xl font-bold mb-4 text-[#2dd4bf]">📚 Lessons</h2>
-              <div className="space-y-2">
-                {lessons.map((lesson, index) => (
-                  <button
-                    key={lesson.id}
-                    onClick={() => setCurrentLesson(index)}
-                    className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all ${
-                      currentLesson === index
-                        ? 'bg-[#2dd4bf] text-[#0a0e27]'
-                        : 'bg-[#2a3150] text-gray-300 hover:bg-[#323b5c]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        currentLesson === index ? 'bg-[#0a0e27] text-[#2dd4bf]' : 'bg-[#1a1f3a]'
-                      }`}>
-                        {index + 1}
-                      </span>
-                      <span>{lesson.title}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Progress */}
-              <div className="mt-6 pt-6 border-t border-[#2a3150]">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Progress</span>
-                  <span className="text-[#2dd4bf] font-bold">33%</span>
-                </div>
-                <div className="w-full bg-[#2a3150] rounded-full h-2">
-                  <div className="bg-[#2dd4bf] h-2 rounded-full w-1/3"></div>
-                </div>
-              </div>
-            </div>
+      {/* Progress Bar */}
+      <div className="bg-[#0d1529] border-b border-[#1a2744]">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400">Overall Progress</span>
+            <span className="text-sm font-bold text-[#6495ed]">
+              {Math.round((completedSteps.length / steps.length) * 100)}%
+            </span>
           </div>
+          <div className="flex gap-2">
+            {steps.map((step, index) => (
+              <div 
+                key={step.id}
+                className="flex-1"
+              >
+                <div className={`h-2 rounded-full transition-all ${
+                  completedSteps.includes(index)
+                    ? 'bg-green-500'
+                    : index === currentStep
+                    ? 'bg-[#6495ed]'
+                    : 'bg-[#1a2744]'
+                }`}></div>
+                <div className="text-xs text-center mt-2 text-gray-500">
+                  {completedSteps.includes(index) && '✓'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-          {/* Center - Interactive Demo */}
-          <div className="lg:col-span-2">
-            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] overflow-hidden">
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-4xl mx-auto">
+          
+          {/* Step Card */}
+          <div className="bg-[#0d1529] rounded-2xl border border-[#1a2744] overflow-hidden">
+            
+            {/* Step Header */}
+            <div className="p-8 border-b border-[#1a2744]">
+              <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+                <span>STEP {currentStep + 1} OF {steps.length}</span>
+                {isStepCompleted && (
+                  <span className="px-3 py-1 bg-green-500/20 border border-green-500 text-green-400 rounded-full text-xs font-bold">
+                    COMPLETED ✓
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-5 mb-4">
+                <div className="text-6xl">{currentStepData.icon}</div>
+                <div>
+                  <h2 className="text-4xl font-bold mb-2">{currentStepData.title}</h2>
+                  <p className="text-lg text-gray-400">{currentStepData.description}</p>
+                </div>
+              </div>
               
-              {/* Lesson Header */}
-              <div className="bg-gradient-to-r from-[#2dd4bf]/20 to-transparent p-6 border-b border-[#2a3150]">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-3xl">📡</span>
-                  <h2 className="text-2xl font-black">{currentLessonData.title}</h2>
-                </div>
-                <p className="text-gray-400">{currentLessonData.description}</p>
-              </div>
+              <button
+                onClick={() => setShowCodeModal(true)}
+                className="mt-4 px-6 py-3 bg-[#6495ed] text-white font-bold rounded-lg hover:bg-[#5580d8] transition-all flex items-center gap-2"
+              >
+                <span>👨‍💻</span>
+                View Code
+              </button>
+            </div>
 
-              {/* Robot Character */}
-              <div className="p-6 text-center border-b border-[#2a3150]">
-                <div className="inline-block relative">
-                  <div className="text-8xl animate-bounce-slow">🤖</div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#2dd4bf] text-[#0a0e27] px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                    Socket Bot
-                  </div>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="p-6">
-                <div className="bg-[#0a0e27] rounded-xl border-2 border-[#2a3150] p-4 h-64 overflow-y-auto custom-scrollbar mb-4">
-                  {messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-                      No messages yet. Try sending one! 👇
+            {/* Interactive Demo */}
+            {currentStepData.showDemo && (
+              <div className="p-8 border-b border-[#1a2744]">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <span>💻</span> Live Demo
+                </h3>
+                
+                {/* Terminal */}
+                <div className="bg-[#0a0f1e] rounded-xl border border-[#1a2744] overflow-hidden mb-4">
+                  <div className="px-4 py-3 bg-[#0d1529] border-b border-[#1a2744] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <span className="text-xs text-gray-400">terminal</span>
                     </div>
-                  ) : (
-                    <>
-                      {messages.map((msg) => (
-                        <div 
-                          key={msg.id}
-                          className={`mb-3 p-3 rounded-lg ${
-                            msg.sender === 'You' 
-                              ? 'bg-[#2dd4bf] text-[#0a0e27] ml-auto max-w-[80%]' 
-                              : msg.sender === 'System'
-                              ? 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-center text-sm'
-                              : 'bg-[#2a3150] max-w-[80%]'
-                          }`}
-                        >
-                          <div className="font-bold text-xs mb-1 opacity-80">{msg.sender}</div>
-                          <div>{msg.text}</div>
-                          <div className="text-xs mt-1 opacity-60">{msg.timestamp}</div>
-                        </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </>
-                  )}
+                    <span className="text-xs text-[#6495ed]">LIVE</span>
+                  </div>
+
+                  <div className="p-4 h-64 overflow-y-auto custom-scrollbar">
+                    {messages.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                        <div className="text-5xl mb-3">💬</div>
+                        <p className="text-sm">Terminal ready. Type a message...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {messages.map((msg) => (
+                          <div 
+                            key={msg.id}
+                            className={`mb-3 ${msg.sender === 'You' ? 'text-right' : ''}`}
+                          >
+                            <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
+                              msg.sender === 'You' 
+                                ? 'bg-[#6495ed] text-white' 
+                                : msg.sender === 'System'
+                                ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
+                                : 'bg-[#0d1529] border border-[#1a2744] text-gray-300'
+                            }`}>
+                              <div className="text-xs opacity-70 mb-1">
+                                [{msg.timestamp}] {msg.sender}
+                              </div>
+                              <div className="text-sm">{msg.text}</div>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Input */}
@@ -239,107 +312,124 @@ function App() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={!isConnected}
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-3 bg-[#2a3150] border-2 border-[#2a3150] rounded-lg focus:border-[#2dd4bf] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Type your message..."
+                    className="flex-1 px-4 py-3 bg-[#0a0f1e] border border-[#1a2744] rounded-lg focus:border-[#6495ed] focus:outline-none disabled:opacity-50 text-white placeholder-gray-500"
                   />
                   <button
                     onClick={handleSend}
                     disabled={!isConnected || !inputMessage.trim()}
-                    className="px-6 py-3 bg-[#2dd4bf] text-[#0a0e27] font-bold rounded-lg hover:bg-[#25b9a5] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="px-8 py-3 bg-[#6495ed] text-white font-bold rounded-lg hover:bg-[#5580d8] disabled:opacity-50 transition-all"
                   >
                     Send
                   </button>
                 </div>
               </div>
+            )}
 
-              {/* Challenge */}
-              <div className="p-6 bg-[#2dd4bf]/10 border-t border-[#2a3150]">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🎯</span>
-                  <div>
-                    <h3 className="font-bold text-[#2dd4bf] mb-1">Challenge:</h3>
-                    <p className="text-sm text-gray-300">{currentLessonData.challenge}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right - Code Panel */}
-          <div className="lg:col-span-2">
-            <div className="bg-[#1a1f3a] rounded-2xl border-2 border-[#2a3150] overflow-hidden">
-              
-              <div className="bg-[#2a3150] p-4 border-b border-[#323b5c] flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <span>💻</span> Code Editor
-                </h2>
-                <button
-                  onClick={() => setShowCode(!showCode)}
-                  className="px-4 py-2 bg-[#2dd4bf] text-[#0a0e27] rounded-lg font-bold text-sm hover:bg-[#25b9a5] transition-all"
-                >
-                  {showCode ? 'Hide Code' : 'Show Code'}
-                </button>
-              </div>
-
-              {showCode && (
-                <div className="p-6 space-y-6">
+            {/* Task */}
+            <div className="p-8 bg-yellow-500/5">
+              <div className="flex gap-4">
+                <span className="text-4xl">🎯</span>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-yellow-400 mb-2">Your Task</h3>
+                  <p className="text-gray-300 mb-3">{currentStepData.task}</p>
+                  <p className="text-sm text-gray-400">💡 {currentStepData.hint}</p>
                   
-                  {/* Server Code */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xl">🖥️</span>
-                      <h3 className="font-bold text-[#2dd4bf]">SERVER (backend/index.js)</h3>
-                    </div>
-                    <div className="bg-[#0a0e27] rounded-lg border border-[#2a3150] overflow-hidden">
-                      <div className="bg-[#1a1f3a] px-4 py-2 border-b border-[#2a3150] flex gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      <pre className="p-4 overflow-x-auto text-sm">
-                        <code className="text-[#2dd4bf]">{currentLessonData.serverCode}</code>
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Client Code */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xl">💻</span>
-                      <h3 className="font-bold text-blue-400">CLIENT (src/App.js)</h3>
-                    </div>
-                    <div className="bg-[#0a0e27] rounded-lg border border-[#2a3150] overflow-hidden">
-                      <div className="bg-[#1a1f3a] px-4 py-2 border-b border-[#2a3150] flex gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      <pre className="p-4 overflow-x-auto text-sm">
-                        <code className="text-blue-400">{currentLessonData.clientCode}</code>
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Explanation */}
-                  <div className="bg-blue-500/10 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                    <h4 className="font-bold text-blue-400 mb-2">💡 How it works:</h4>
-                    <p className="text-sm text-gray-300">{currentLessonData.description}</p>
-                  </div>
-
+                  {canCompleteCurrentStep && !isStepCompleted && (
+                    <button
+                      onClick={completeStep}
+                      className="mt-4 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                    >
+                      <span>✓</span>
+                      Mark as Complete
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
 
-              {!showCode && (
-                <div className="p-12 text-center text-gray-500">
-                  <div className="text-6xl mb-4">👨‍💻</div>
-                  <p>Click "Show Code" to see the magic! ✨</p>
-                </div>
-              )}
+            {/* Navigation */}
+            <div className="p-6 bg-[#0a0f1e] flex justify-between">
+              <button
+                onClick={previousStep}
+                disabled={currentStep === 0}
+                className="px-6 py-3 bg-[#1a2744] text-white font-bold rounded-lg hover:bg-[#242f4a] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              >
+                <span>←</span>
+                Previous
+              </button>
+              
+              <button
+                onClick={nextStep}
+                disabled={currentStep === steps.length - 1 || !isStepCompleted}
+                className="px-6 py-3 bg-[#6495ed] text-white font-bold rounded-lg hover:bg-[#5580d8] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              >
+                Next Step
+                <span>→</span>
+              </button>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* Code Modal */}
+      {showCodeModal && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowCodeModal(false)}
+        >
+          <div 
+            className="bg-[#0d1529] rounded-2xl border border-[#1a2744] max-w-4xl w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-[#1a2744] flex items-center justify-between sticky top-0 bg-[#0d1529] z-10">
+              <h3 className="text-2xl font-bold">Code Reference</h3>
+              <button
+                onClick={() => setShowCodeModal(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Server Code */}
+              <div>
+                <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-[#6495ed]">
+                  <span>🖥️</span> Server Side (backend/index.js)
+                </h4>
+                <div className="bg-[#0a0f1e] rounded-lg border border-[#1a2744] overflow-hidden">
+                  <div className="px-4 py-2 bg-[#0d1529] border-b border-[#1a2744] flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <pre className="p-4 text-sm overflow-x-auto">
+                    <code className="text-[#6495ed]">{currentStepData.serverCode}</code>
+                  </pre>
+                </div>
+              </div>
+
+              {/* Client Code */}
+              <div>
+                <h4 className="text-lg font-bold mb-3 flex items-center gap-2 text-[#7ba7ff]">
+                  <span>💻</span> Client Side (src/App.js)
+                </h4>
+                <div className="bg-[#0a0f1e] rounded-lg border border-[#1a2744] overflow-hidden">
+                  <div className="px-4 py-2 bg-[#0d1529] border-b border-[#1a2744] flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <pre className="p-4 text-sm overflow-x-auto">
+                    <code className="text-[#7ba7ff]">{currentStepData.clientCode}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
