@@ -19,7 +19,6 @@ function App() {
       id: 0,
       title: "Establish Connection",
       icon: "🔌",
-      color: "#3b82f6",
       description: "When a client connects to the server, both sides know about it instantly. This creates a persistent two-way communication channel.",
       serverCode: `// Server listens for new connections
 io.on('connection', (socket) => {
@@ -39,7 +38,6 @@ socket.on('connect', () => {
       id: 1,
       title: "Emit Events",
       icon: "📤",
-      color: "#8b5cf6",
       description: "Use emit() to send custom events from client to server. Think of it like sending a message in a specific channel.",
       serverCode: `// Server receives the event
 socket.on('message', (data) => {
@@ -59,7 +57,6 @@ socket.emit('message', 'Hello Server!');
       id: 2,
       title: "Server Response",
       icon: "📥",
-      color: "#10b981",
       description: "Server can send messages back! This creates real-time two-way communication - the foundation of chat apps, live updates, and multiplayer games.",
       serverCode: `// Server sends response
 socket.emit('response', {
@@ -78,9 +75,13 @@ socket.on('response', (data) => {
     }
   ];
 
+  // DARK NEON Color Scheme - Purple/Pink Gaming Theme
+  const PRIMARY_COLOR = '#a855f7'; // Purple
+  const ACCENT_COLOR = '#ec4899'; // Pink
+  const SUCCESS_COLOR = '#10b981'; // Green
+  const WARNING_COLOR = '#f59e0b'; // Orange
 
-
-  // Mouse tracking for subtle effects
+  // Mouse tracking for glow effects
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -168,40 +169,62 @@ socket.on('response', (data) => {
   const isStepCompleted = completedSteps.includes(currentStep);
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] text-white relative overflow-hidden">
       
-      {/* Spotlight Effect (follows mouse) */}
-      <div 
-        className="fixed w-96 h-96 rounded-full pointer-events-none z-0 opacity-20 blur-3xl transition-all duration-300"
-        style={{
-          background: `radial-gradient(circle, ${currentStepData.color}, transparent)`,
-          left: `${mousePosition.x - 192}px`,
-          top: `${mousePosition.y - 192}px`,
-        }}
-      />
+      {/* Animated Neon Glow Background */}
+      <div className="fixed inset-0 z-0">
+        {/* Purple Glow */}
+        <div 
+          className="absolute w-[500px] h-[500px] rounded-full blur-[150px] opacity-30 animate-pulse-slow"
+          style={{
+            background: 'radial-gradient(circle, #a855f7, transparent)',
+            top: '10%',
+            left: '20%',
+          }}
+        />
+        {/* Pink Glow */}
+        <div 
+          className="absolute w-[600px] h-[600px] rounded-full blur-[150px] opacity-30 animate-pulse-slow"
+          style={{
+            background: 'radial-gradient(circle, #ec4899, transparent)',
+            bottom: '10%',
+            right: '20%',
+            animationDelay: '1s'
+          }}
+        />
+        {/* Mouse Follow Glow */}
+        <div 
+          className="absolute w-96 h-96 rounded-full blur-[120px] opacity-20 pointer-events-none transition-all duration-300"
+          style={{
+            background: 'radial-gradient(circle, #a855f7, #ec4899, transparent)',
+            left: `${mousePosition.x - 192}px`,
+            top: `${mousePosition.y - 192}px`,
+          }}
+        />
+      </div>
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="bg-[#0f1419]/80 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
+        <header className="bg-black/80 backdrop-blur-xl border-b-2 border-purple-500/30 sticky top-0 z-40 shadow-lg shadow-purple-500/20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="text-3xl sm:text-4xl">⚡</div>
+                <div className="text-3xl sm:text-4xl animate-pulse-slow">⚡</div>
                 <div className="text-center sm:text-left">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
                     <span className="text-white">SOCKET</span>
-                    <span className="text-[#6495ed]">/</span>
-                    <span className="text-[#6495ed]">MATRIX</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">/</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">MATRIX</span>
                   </h1>
-                  <p className="text-xs sm:text-sm text-gray-400 font-medium">Interactive Socket.IO Tutorial</p>
+                  <p className="text-xs sm:text-sm text-gray-400 font-medium">Interactive Socket.IO Tutorial 🎮</p>
                 </div>
               </div>
               
               <div className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border-2 transition-all duration-300 ${
                 isConnected 
-                  ? 'bg-green-500/10 border-green-500 text-green-400' 
-                  : 'bg-red-500/10 border-red-500 text-red-400'
+                  ? 'bg-green-500/20 border-green-500 text-green-400 shadow-lg shadow-green-500/50' 
+                  : 'bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-500/50'
               }`}>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full relative ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -214,13 +237,13 @@ socket.on('response', (data) => {
           </div>
         </header>
 
-        {/* Simple Progress Indicator */}
-        <div className="bg-[#0f1419]/60 backdrop-blur-xl border-b border-white/5">
+        {/* Progress Bar */}
+        <div className="bg-black/60 backdrop-blur-xl border-b-2 border-purple-500/20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs sm:text-sm font-semibold text-gray-400 tracking-wide">PROGRESS</span>
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="text-xl sm:text-2xl font-black text-white">
+                <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
                   {Math.round((completedSteps.length / steps.length) * 100)}%
                 </div>
                 <div className="text-xs text-gray-500 hidden sm:block">
@@ -240,20 +263,17 @@ socket.on('response', (data) => {
                     <div 
                       className={`h-2 sm:h-3 rounded-full transition-all duration-500 cursor-pointer ${
                         completedSteps.includes(index)
-                          ? 'opacity-100'
+                          ? 'bg-green-500 shadow-lg shadow-green-500/50'
                           : index === currentStep
-                          ? 'opacity-100'
-                          : 'bg-white/5 opacity-50'
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/50'
+                          : 'bg-white/10'
                       }`}
-                      style={{
-                        backgroundColor: completedSteps.includes(index) || index === currentStep ? step.color : undefined
-                      }}
                     />
                     <div className="text-xs sm:text-sm text-center mt-2 sm:mt-3 font-bold">
                       {completedSteps.includes(index) ? (
                         <span className="text-green-400">✓</span>
                       ) : index === currentStep ? (
-                        <span style={{ color: step.color }}>{step.icon}</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">{step.icon}</span>
                       ) : (
                         <span className="text-gray-600">{step.icon}</span>
                       )}
@@ -270,22 +290,22 @@ socket.on('response', (data) => {
           <div className="max-w-5xl mx-auto">
             
             {/* Step Card */}
-            <div className="bg-[#0f1419]/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+            <div className="bg-black/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border-2 border-purple-500/40 overflow-hidden shadow-2xl shadow-purple-500/20">
               
               {/* Step Header */}
               <div 
-                className="p-6 sm:p-8 lg:p-10 border-b border-white/10 relative overflow-hidden"
+                className="p-6 sm:p-8 lg:p-10 border-b-2 border-purple-500/30 relative overflow-hidden"
                 style={{
-                  background: `linear-gradient(135deg, ${currentStepData.color}15 0%, transparent 100%)`
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)'
                 }}
               >
                 <div className="relative z-10">
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300 mb-4 sm:mb-5">
-                    <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black/30 rounded-full font-bold border border-white/10">
+                    <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-500/20 rounded-full font-bold border-2 border-purple-500/50 text-purple-400 shadow-lg shadow-purple-500/30">
                       STEP {currentStep + 1} OF {steps.length}
                     </span>
                     {isStepCompleted && (
-                      <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-500/20 border-2 border-green-500 text-green-400 rounded-full text-xs font-bold">
+                      <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-500/20 border-2 border-green-500 text-green-400 rounded-full text-xs font-bold shadow-lg shadow-green-500/30">
                         COMPLETED ✓
                       </span>
                     )}
@@ -294,7 +314,7 @@ socket.on('response', (data) => {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
                     <div className="text-5xl sm:text-6xl lg:text-7xl">{currentStepData.icon}</div>
                     <div className="flex-1">
-                      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-2 sm:mb-3 text-white">
+                      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-2 sm:mb-3 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
                         {currentStepData.title}
                       </h2>
                       <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed font-medium">
@@ -305,8 +325,7 @@ socket.on('response', (data) => {
                   
                   <button
                     onClick={() => setShowCodeModal(true)}
-                    className="px-6 sm:px-8 py-3 sm:py-4 text-white font-bold rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-                    style={{ backgroundColor: currentStepData.color }}
+                    className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
                   >
                     <span className="text-lg sm:text-2xl">👨‍💻</span>
                     <span>View Code</span>
@@ -316,36 +335,31 @@ socket.on('response', (data) => {
 
               {/* Interactive Demo */}
               {currentStepData.showDemo && (
-                <div className="p-6 sm:p-8 lg:p-10 border-b border-white/10">
+                <div className="p-6 sm:p-8 lg:p-10 border-b-2 border-purple-500/20 bg-gradient-to-br from-black/50 to-purple-900/10">
                   <h3 className="text-xl sm:text-2xl font-black mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 text-gray-100">
                     <span className="text-2xl sm:text-3xl">💻</span>
                     <span>Live Demo</span>
                   </h3>
                   
                   {/* Terminal */}
-                  <div className="bg-[#0a0e1a]/80 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 overflow-hidden mb-4 sm:mb-6 shadow-xl">
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[#0f1419] border-b border-white/10 flex items-center justify-between">
+                  <div className="bg-black/95 backdrop-blur-xl rounded-xl sm:rounded-2xl border-2 border-purple-500/50 overflow-hidden mb-4 sm:mb-6 shadow-2xl shadow-purple-500/30">
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 bg-black/90 border-b-2 border-purple-500/50 flex items-center justify-between">
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div className="flex gap-1.5 sm:gap-2">
-                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></div>
+                          <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"></div>
                         </div>
                         <span className="text-xs sm:text-sm text-gray-400 font-mono font-bold hidden sm:inline">terminal@socket-matrix</span>
                       </div>
                       <span 
-                        className="px-2 sm:px-3 py-1 border text-xs font-bold rounded-full"
-                        style={{ 
-                          backgroundColor: `${currentStepData.color}20`,
-                          borderColor: currentStepData.color,
-                          color: currentStepData.color
-                        }}
+                        className="px-2 sm:px-3 py-1 border-2 border-purple-500/50 text-xs font-bold rounded-full bg-purple-500/20 text-purple-400 shadow-lg shadow-purple-500/30"
                       >
                         LIVE
                       </span>
                     </div>
 
-                    <div className="p-4 sm:p-6 h-64 sm:h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                    <div className="p-4 sm:p-6 h-64 sm:h-80 overflow-y-auto custom-scrollbar">
                       {messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-500">
                           <div className="text-4xl sm:text-5xl lg:text-6xl mb-3 sm:mb-4">💬</div>
@@ -361,17 +375,13 @@ socket.on('response', (data) => {
                             >
                               <div className={`inline-block max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg transition-all duration-300 ${
                                 msg.sender === 'You' 
-                                  ? 'text-white' 
+                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold shadow-purple-500/50' 
                                   : msg.sender === 'System'
-                                  ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
-                                  : 'bg-[#0f1419] border border-white/10 text-gray-200'
-                              }`}
-                              style={{
-                                backgroundColor: msg.sender === 'You' ? currentStepData.color : undefined
-                              }}
-                              >
+                                  ? 'bg-yellow-500/10 border-2 border-yellow-500/50 text-yellow-400'
+                                  : 'bg-black/80 border-2 border-purple-500/50 text-gray-200 shadow-purple-500/30'
+                              }`}>
                                 <div className="text-xs font-bold opacity-80 mb-2">
-                                  <span className="px-2 py-1 bg-black/20 rounded">
+                                  <span className="px-2 py-1 bg-black/30 rounded">
                                     [{msg.timestamp}] {msg.sender}
                                   </span>
                                 </div>
@@ -394,13 +404,12 @@ socket.on('response', (data) => {
                       onKeyPress={handleKeyPress}
                       disabled={!isConnected}
                       placeholder="Type your message..."
-                      className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-[#0a0e1a]/80 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl focus:border-white/30 focus:outline-none disabled:opacity-50 text-white placeholder-gray-500 font-medium text-sm sm:text-base lg:text-lg transition-all duration-300"
+                      className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-black/90 backdrop-blur-xl border-2 border-purple-500/50 rounded-xl sm:rounded-2xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:shadow-lg focus:shadow-purple-500/30 disabled:opacity-50 text-white placeholder-gray-500 font-medium text-sm sm:text-base lg:text-lg transition-all duration-300"
                     />
                     <button
                       onClick={handleSend}
                       disabled={!isConnected || !inputMessage.trim()}
-                      className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-white font-bold rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm sm:text-base lg:text-lg whitespace-nowrap"
-                      style={{ backgroundColor: currentStepData.color }}
+                      className="px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 text-sm sm:text-base lg:text-lg whitespace-nowrap"
                     >
                       Send
                     </button>
@@ -409,7 +418,7 @@ socket.on('response', (data) => {
               )}
 
               {/* Task */}
-              <div className="p-6 sm:p-8 lg:p-10 bg-yellow-500/5 border-b border-white/10">
+              <div className="p-6 sm:p-8 lg:p-10 bg-yellow-500/5 border-b-2 border-yellow-500/30">
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <span className="text-4xl sm:text-5xl">🎯</span>
                   <div className="flex-1">
@@ -427,7 +436,7 @@ socket.on('response', (data) => {
                     {canCompleteCurrentStep && !isStepCompleted && (
                       <button
                         onClick={completeStep}
-                        className="mt-4 sm:mt-6 px-6 sm:px-8 py-3 sm:py-4 bg-green-500 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-green-600 transition-all duration-300 transform hover:scale-105 flex items-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg"
+                        className="mt-4 sm:mt-6 px-6 sm:px-8 py-3 sm:py-4 bg-green-500 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-green-600 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-green-500/50 flex items-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg"
                       >
                         <span className="text-lg sm:text-2xl">✓</span>
                         <span>Complete This Step</span>
@@ -438,11 +447,11 @@ socket.on('response', (data) => {
               </div>
 
               {/* Navigation */}
-              <div className="p-4 sm:p-6 lg:p-8 bg-[#0a0e1a]/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="p-4 sm:p-6 lg:p-8 bg-black/80 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <button
                   onClick={previousStep}
                   disabled={currentStep === 0}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-[#1a1f2e] text-white font-bold rounded-xl sm:rounded-2xl hover:bg-[#242938] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg order-2 sm:order-1"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-black/90 border-2 border-white/20 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-black hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg order-2 sm:order-1"
                 >
                   <span className="text-lg sm:text-xl">←</span>
                   <span>Previous</span>
@@ -458,8 +467,7 @@ socket.on('response', (data) => {
                 <button
                   onClick={nextStep}
                   disabled={currentStep === steps.length - 1 || !isStepCompleted}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-white font-bold rounded-xl sm:rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg order-3"
-                  style={{ backgroundColor: currentStepData.color }}
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl sm:rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg order-3"
                 >
                   <span>Next Step</span>
                   <span className="text-lg sm:text-xl">→</span>
@@ -473,15 +481,15 @@ socket.on('response', (data) => {
       {/* Code Modal */}
       {showCodeModal && (
         <div 
-          className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          className="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
           onClick={() => setShowCodeModal(false)}
         >
           <div 
-            className="bg-[#0f1419]/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 max-w-6xl w-full max-h-[90vh] overflow-auto shadow-2xl animate-scaleIn"
+            className="bg-black/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl border-2 border-purple-500/50 max-w-6xl w-full max-h-[90vh] overflow-auto shadow-2xl shadow-purple-500/30 animate-scaleIn"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 sm:p-6 lg:p-8 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0f1419]/95 backdrop-blur-xl z-10">
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white">
+            <div className="p-4 sm:p-6 lg:p-8 border-b-2 border-purple-500/50 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-xl z-10">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
                 Code Reference
               </h3>
               <button
@@ -496,20 +504,19 @@ socket.on('response', (data) => {
               {/* Server Code */}
               <div>
                 <h4 
-                  className="text-lg sm:text-xl font-black mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3"
-                  style={{ color: currentStepData.color }}
+                  className="text-lg sm:text-xl font-black mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400"
                 >
                   <span className="text-xl sm:text-2xl">🖥️</span>
                   <span>Server Side (backend/index.js)</span>
                 </h4>
-                <div className="bg-[#0a0e1a]/90 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-                  <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#0f1419] border-b border-white/10 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="bg-black/90 backdrop-blur-xl rounded-xl sm:rounded-2xl border-2 border-purple-500/50 overflow-hidden shadow-xl shadow-purple-500/20">
+                  <div className="px-4 sm:px-6 py-2 sm:py-3 bg-black/80 border-b-2 border-purple-500/50 flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"></div>
                   </div>
                   <pre className="p-4 sm:p-6 text-xs sm:text-sm lg:text-base overflow-x-auto font-mono">
-                    <code style={{ color: currentStepData.color }}>{currentStepData.serverCode}</code>
+                    <code className="text-purple-400">{currentStepData.serverCode}</code>
                   </pre>
                 </div>
               </div>
@@ -517,20 +524,19 @@ socket.on('response', (data) => {
               {/* Client Code */}
               <div>
                 <h4 
-                  className="text-lg sm:text-xl font-black mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3"
-                  style={{ color: currentStepData.color }}
+                  className="text-lg sm:text-xl font-black mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400"
                 >
                   <span className="text-xl sm:text-2xl">💻</span>
                   <span>Client Side (src/App.js)</span>
                 </h4>
-                <div className="bg-[#0a0e1a]/90 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-                  <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#0f1419] border-b border-white/10 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="bg-black/90 backdrop-blur-xl rounded-xl sm:rounded-2xl border-2 border-purple-500/50 overflow-hidden shadow-xl shadow-purple-500/20">
+                  <div className="px-4 sm:px-6 py-2 sm:py-3 bg-black/80 border-b-2 border-purple-500/50 flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"></div>
                   </div>
                   <pre className="p-4 sm:p-6 text-xs sm:text-sm lg:text-base overflow-x-auto font-mono">
-                    <code style={{ color: currentStepData.color }}>{currentStepData.clientCode}</code>
+                    <code className="text-pink-400">{currentStepData.clientCode}</code>
                   </pre>
                 </div>
               </div>
@@ -571,6 +577,15 @@ socket.on('response', (data) => {
           }
         }
 
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.6;
+          }
+        }
+
         .animate-fadeInUp {
           animation: fadeInUp 0.4s ease-out forwards;
         }
@@ -583,22 +598,28 @@ socket.on('response', (data) => {
           animation: scaleIn 0.3s ease-out;
         }
 
-        /* Custom scrollbar */
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 6px;
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
         }
 
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
+        /* Custom scrollbar with NEON GLOW */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
         }
 
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #374151;
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #000000;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #a855f7, #ec4899);
           border-radius: 10px;
+          box-shadow: 0 0 10px #a855f7;
         }
 
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #4b5563;
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #9333ea, #db2777);
+          box-shadow: 0 0 15px #a855f7;
         }
       `}</style>
     </div>
