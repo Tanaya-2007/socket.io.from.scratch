@@ -50,7 +50,7 @@ socket.on('message', (data) => {
 socket.emit('message', 'Hello Server!');
 // First param = event name
 // Second param = data to send`,
-      task: "Send at least 3 messages using the terminal below",
+      task: "Send at least 3 messages using the terminal above",
       hint: "Type in the input box and hit Send",
       canComplete: () => messagesSent >= 3,
       showDemo: true
