@@ -6,7 +6,7 @@ const socket = io('http://localhost:4000');
 function App() {
   // Global state
   const [isConnected, setIsConnected] = useState(false);
-  const [currentLevel, setCurrentLevel] = useState(null); // null, 1, or 2
+  const [currentLevel, setCurrentLevel] = useState(null); 
   
   // Level 1 state
   const [currentStep, setCurrentStep] = useState(0);
@@ -20,7 +20,7 @@ function App() {
   const [testSubmitted, setTestSubmitted] = useState(false);
   
   // Level 2 state
-  const [level2Phase, setLevel2Phase] = useState('theory'); // 'theory' or 'practice'
+  const [level2Phase, setLevel2Phase] = useState('theory'); 
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [currentRoom, setCurrentRoom] = useState(null);
@@ -1523,7 +1523,7 @@ socket.emit('leave-room');`}</code>
               {/* Info */}
               <div className="mt-8 bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
                 <div className="text-xs text-gray-400">
-                  <p className="mb-2">💡 <strong>Tip:</strong> Open this in another tab with a different name to test room chat!</p>
+                  <p className="mb-2">💡 <strong>Tip:</strong> Open this in another tab with a different name and same room codeto test room chat!</p>
                 </div>
               </div>
             </div>
