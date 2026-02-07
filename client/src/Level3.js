@@ -158,20 +158,8 @@ function Level3({ socket, isConnected, onBack }) {
           {/* Theory Content */}
           <div className="container mx-auto px-6 py-12 max-w-6xl">
             
-            {/* Hero Section */}
-            <div className="text-center mb-16 animate-slideUp">
-              <div className="text-8xl mb-6 animate-bounce-slow">📡</div>
-              <h2 className="text-6xl font-black mb-4">
-                <span className="bg-gradient-to-r from-orange-400 to-red-600 bg-clip-text text-transparent">
-                  BROADCAST
-                </span>
-              </h2>
-              <p className="text-2xl text-gray-300 max-w-3xl mx-auto">
-                Send messages to everyone EXCEPT yourself - perfect for notifications, game updates, and live feeds!
-              </p>
-            </div>
-
-            {/* Real-World Examples */}
+            
+        {/* Real-World Examples */}
             <div className="mb-16 animate-slideUp" style={{ animationDelay: '0.1s' }}>
               <h3 className="text-3xl font-black mb-8 text-orange-400 flex items-center gap-3">
                 <span>🌍</span>
