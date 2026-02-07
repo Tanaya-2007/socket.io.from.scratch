@@ -1,250 +1,201 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Level3({ socket, isConnected, onBack }) {
-  const [level3Phase, setLevel3Phase] = useState('theory'); // 'theory' or 'practice'
-  const [userName, setUserName] = useState('');
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [broadcasts, setBroadcasts] = useState([]);
-  const [broadcastInput, setBroadcastInput] = useState('');
+function Level3({ socket, isConnected, onBack, isTransitioning }) {
+  const [phase, setPhase] = useState('theory');
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [broadcastType, setBroadcastType] = useState('all');
   const messagesEndRef = useRef(null);
 
-  // Socket.IO event listeners for Level 3
   useEffect(() => {
-    socket.on('user-registered', (data) => {
-      setIsRegistered(true);
-      setUsers(data.users);
-    });
-
-    socket.on('user-joined', (data) => {
-      setUsers(data.users);
-      addSystemBroadcast(`${data.user} joined the server!`);
-    });
-
-    socket.on('user-left', (data) => {
-      setUsers(data.users);
-      addSystemBroadcast(`${data.user} left the server`);
-    });
-
-    socket.on('broadcast', (data) => {
-      setBroadcasts(prev => [...prev, {
-        id: Date.now() + Math.random(),
-        sender: data.sender,
-        text: data.text,
-        timestamp: data.timestamp || new Date().toLocaleTimeString(),
-        type: 'broadcast'
-      }]);
+    socket.on('broadcast-message', (data) => {
+      addMessage(data.sender, data.text, data.timestamp);
     });
 
     return () => {
-      socket.off('user-registered');
-      socket.off('user-joined');
-      socket.off('user-left');
-      socket.off('broadcast');
+      socket.off('broadcast-message');
     };
   }, [socket]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [broadcasts]);
+  }, [messages]);
 
-  const addSystemBroadcast = (text) => {
-    setBroadcasts(prev => [...prev, {
+  const addMessage = (sender, text, timestamp = null) => {
+    setMessages(prev => [...prev, { 
+      sender, 
+      text, 
+      timestamp: timestamp || new Date().toLocaleTimeString(),
       id: Date.now() + Math.random(),
-      sender: 'System',
-      text,
-      timestamp: new Date().toLocaleTimeString(),
-      type: 'system'
+      type: 'message'
     }]);
   };
 
-  const handleRegister = () => {
-    if (userName.trim()) {
-      socket.emit('register-user', { userName: userName.trim() });
+  const addNotification = (text) => {
+    setMessages(prev => [...prev, {
+      text,
+      timestamp: new Date().toLocaleTimeString(),
+      id: Date.now() + Math.random(),
+      type: 'notification'
+    }]);
+  };
+
+  const handleBroadcast = () => {
+    if (inputMessage.trim()) {
+      if (broadcastType === 'all') {
+        socket.emit('broadcast-all', inputMessage);
+        addMessage('You', inputMessage);
+      } else {
+        socket.emit('broadcast-others', inputMessage);
+        addNotification(`Broadcasted to others: "${inputMessage}"`);
+      }
+      setInputMessage('');
     }
   };
 
-  const handleSendBroadcast = () => {
-    if (broadcastInput.trim() && isRegistered) {
-      socket.emit('broadcast', { text: broadcastInput });
-      setBroadcastInput('');
-    }
-  };
-
-  const handleLeave = () => {
-    socket.emit('leave-broadcast');
-    setIsRegistered(false);
-    setUserName('');
-    setBroadcasts([]);
-    setUsers([]);
-  };
-
-  const handleBack = () => {
-    if (isRegistered) {
-      handleLeave();
-    }
-    setLevel3Phase('theory');
-    onBack();
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // THEORY PHASE
-  // ═══════════════════════════════════════════════════════════
-  if (level3Phase === 'theory') {
+  if (phase === 'theory') {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
-        {/* Orange/Red Glow Background */}
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-orange-600 rounded-full blur-[150px]"></div>
-          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-red-600 rounded-full blur-[150px]"></div>
+          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
         </div>
 
         <div className="relative z-10">
-          {/* Header - Level 1 Style */}
-          <header className="bg-[#0d1529] border-b border-orange-500/30 sticky top-0 z-40">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30 sticky top-0 z-40">
+            <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center justify-between">
-                {/* Back Button */}
-                <button
-                  onClick={handleBack}
-                  className="px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-orange-500/20"
-                >
-                  <span>←</span>
+                <button onClick={onBack} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
+                  <span>←</span> <span className="hidden sm:inline">Back</span>
                 </button>
 
-                {/* Title */}
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">⚡</div>
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    <span className="text-orange-500">LEVEL 3</span>
-                  </h1>
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="text-2xl md:text-3xl">⚡</div>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-cyan-400">Level 3</h1>
                 </div>
-
-                {/* Status Badge */}
-                <div className={`px-4 py-2 rounded-lg text-xs font-bold border ${
-                  isConnected 
-                    ? 'bg-green-500/20 border-green-500 text-green-400' 
-                    : 'bg-red-500/20 border-red-500 text-red-400'
+                
+                <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
+                  isConnected ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'
                 }`}>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-                    <span className="hidden sm:inline">{isConnected ? 'ON' : 'OFF'}</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span>{isConnected ? 'ON' : 'OFF'}</span>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="border-t border-orange-500/20 bg-[#0a0f1e] px-4 sm:px-6 lg:px-8 py-3">
-              <div className="container mx-auto">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-400 tracking-wide">PROGRESS</span>
-                  <span className="text-xl font-black text-orange-400">0%</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-600">
-                  <span>📡</span>
-                  <span>💬</span>
-                  <span>📊</span>
                 </div>
               </div>
             </div>
           </header>
 
-          {/* Theory Content */}
-          <div className="container mx-auto px-6 py-12 max-w-6xl">
+          <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-6xl">
             
             
-        {/* Real-World Examples */}
-            <div className="mb-16 animate-slideUp" style={{ animationDelay: '0.1s' }}>
-              <h3 className="text-3xl font-black mb-8 text-orange-400 flex items-center gap-3">
-                <span>🌍</span>
-                <span>Real-World Examples</span>
+            {/* Real-World Examples */}
+            <div className="mb-8 md:mb-12">
+              <h3 className="text-2xl md:text-3xl font-black mb-6 text-cyan-400 flex items-center gap-2 md:gap-3">
+                <span>🎮</span> Real-World Examples
               </h3>
-              
-              <div className="grid md:grid-cols-3 gap-6">
-                {/* Twitter/X */}
-                <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-2 border-orange-500/30 rounded-3xl p-8 hover:border-orange-400 hover:scale-105 transition-all duration-300">
-                  <div className="text-5xl mb-4">🐦</div>
-                  <h4 className="text-2xl font-black mb-3 text-orange-400">Twitter/X</h4>
-                  <p className="text-gray-300">You post a tweet → Everyone sees it in their feed → You don't see your own tweet appear</p>
+
+              <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
+                  <div className="text-3xl md:text-4xl mb-3">🎮</div>
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Multiplayer Games</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-3">
+                    "Server maintenance in 5 minutes!" → All players see it
+                  </p>
+                  <div className="bg-cyan-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-cyan-400">io.emit()</code>
+                  </div>
                 </div>
 
-                {/* Online Games */}
-                <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-2 border-orange-500/30 rounded-3xl p-8 hover:border-orange-400 hover:scale-105 transition-all duration-300">
-                  <div className="text-5xl mb-4">🎮</div>
-                  <h4 className="text-2xl font-black mb-3 text-orange-400">Online Games</h4>
-                  <p className="text-gray-300">You move your character → Server tells everyone else → You already know your position</p>
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
+                  <div className="text-3xl md:text-4xl mb-3">💬</div>
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Chat Apps</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-3">
+                    "Alex is typing..." → Others see it, Alex doesn't
+                  </p>
+                  <div className="bg-blue-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-blue-400">broadcast.emit()</code>
+                  </div>
                 </div>
 
-                {/* Live Notifications */}
-                <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-2 border-orange-500/30 rounded-3xl p-8 hover:border-orange-400 hover:scale-105 transition-all duration-300">
-                  <div className="text-5xl mb-4">🔔</div>
-                  <h4 className="text-2xl font-black mb-3 text-orange-400">Notifications</h4>
-                  <p className="text-gray-300">User joins → Notify everyone else → The joiner doesn't need a notification about themselves</p>
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
+                  <div className="text-3xl md:text-4xl mb-3">🏆</div>
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Live Leaderboard</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-3">
+                    "Bob joined the game!" → Everyone else sees it
+                  </p>
+                  <div className="bg-blue-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-blue-400">broadcast.emit()</code>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* How Broadcast Works */}
-            <div className="mb-16 bg-black/60 backdrop-blur-xl border-2 border-orange-500/30 rounded-3xl p-10 animate-slideUp" style={{ animationDelay: '0.2s' }}>
-              <h3 className="text-3xl font-black mb-8 text-orange-400 flex items-center gap-3">
-                <span>⚙️</span>
-                <span>How Broadcast Works</span>
+            {/* The Difference */}
+            <div className="mb-8 md:mb-12 bg-black/60 border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
+              <h3 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 text-cyan-400 flex items-center gap-2 md:gap-3">
+                <span>🎯</span> The Key Difference
               </h3>
 
-              <div className="space-y-6">
-                <div className="flex gap-6 items-start">
-                  <div className="text-4xl">1️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-white">Send to Everyone Else</h4>
-                    <p className="text-gray-300 text-lg">socket.broadcast.emit() sends to ALL connected clients EXCEPT the sender</p>
-                    <div className="mt-3 bg-black rounded-xl border border-orange-500/30 p-4">
-                      <code className="text-orange-400 text-sm font-mono">
-                        socket.broadcast.emit('message', 'Hello everyone!');
-                      </code>
+              <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+                {/* io.emit */}
+                <div className="bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl md:text-4xl">📢</div>
+                    <h4 className="text-xl md:text-2xl font-black text-cyan-400">io.emit()</h4>
+                  </div>
+                  <p className="text-sm md:text-base text-gray-300 mb-4">
+                    Sends to <strong className="text-cyan-400">EVERYONE</strong> including yourself
+                  </p>
+                  <div className="bg-black/50 rounded-lg p-4 mb-4">
+                    <code className="text-cyan-400 text-xs md:text-sm">
+                      io.emit('alert', 'Server update!');<br/>
+                      // ALL users see this
+                    </code>
+                  </div>
+                  <div className="space-y-2 text-xs md:text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-gray-300">Server announcements</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-gray-300">Global chat messages</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span className="text-gray-300">Game-wide events</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-6 items-start">
-                  <div className="text-4xl">2️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-white">Compare to Other Methods</h4>
-                    <p className="text-gray-300 text-lg">Understanding the difference between emit types</p>
-                    <div className="mt-3 space-y-2">
-                      <div className="bg-black rounded-xl border border-blue-500/30 p-4">
-                        <div className="text-xs text-blue-400 font-bold mb-1">socket.emit()</div>
-                        <code className="text-blue-400 text-sm font-mono">// Sends to THIS client only</code>
-                      </div>
-                      <div className="bg-black rounded-xl border border-green-500/30 p-4">
-                        <div className="text-xs text-green-400 font-bold mb-1">io.emit()</div>
-                        <code className="text-green-400 text-sm font-mono">// Sends to ALL clients (including sender)</code>
-                      </div>
-                      <div className="bg-black rounded-xl border border-orange-500/30 p-4">
-                        <div className="text-xs text-orange-400 font-bold mb-1">socket.broadcast.emit()</div>
-                        <code className="text-orange-400 text-sm font-mono">// Sends to ALL clients EXCEPT sender</code>
-                      </div>
-                    </div>
+                {/* socket.broadcast.emit */}
+                <div className="bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl md:text-4xl">🔔</div>
+                    <h4 className="text-xl md:text-2xl font-black text-blue-400">socket.broadcast.emit()</h4>
                   </div>
-                </div>
-
-                <div className="flex gap-6 items-start">
-                  <div className="text-4xl">3️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-white">Perfect Use Cases</h4>
-                    <p className="text-gray-300 text-lg">When the sender already knows what they did, tell everyone else</p>
-                    <div className="mt-3 bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-                      <ul className="text-sm text-gray-300 space-y-2">
-                        <li>• Player movement in games (you already moved, tell others)</li>
-                        <li>• User joins/leaves announcements (no need to tell yourself)</li>
-                        <li>• Live typing indicators (you know you're typing)</li>
-                        <li>• Status updates (your status changed, notify others)</li>
-                      </ul>
+                  <p className="text-sm md:text-base text-gray-300 mb-4">
+                    Sends to <strong className="text-blue-400">EVERYONE EXCEPT</strong> yourself
+                  </p>
+                  <div className="bg-black/50 rounded-lg p-4 mb-4">
+                    <code className="text-blue-400 text-xs md:text-sm">
+                      socket.broadcast.emit('joined');<br/>
+                      // Others see, you don't
+                    </code>
+                  </div>
+                  <div className="space-y-2 text-xs md:text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-400">✓</span>
+                      <span className="text-gray-300">"Player joined" notifications</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-400">✓</span>
+                      <span className="text-gray-300">Typing indicators</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-400">✓</span>
+                      <span className="text-gray-300">Activity status updates</span>
                     </div>
                   </div>
                 </div>
@@ -252,514 +203,189 @@ function Level3({ socket, isConnected, onBack }) {
             </div>
 
             {/* Code Example */}
-            <div className="mb-16 bg-black/60 backdrop-blur-xl border-2 border-orange-500/30 rounded-3xl overflow-hidden animate-slideUp" style={{ animationDelay: '0.3s' }}>
-              <div className="p-8 border-b border-orange-500/30 bg-orange-500/5">
-                <h3 className="text-3xl font-black text-orange-400 flex items-center gap-3">
-                  <span>👨‍💻</span>
-                  <span>The Code</span>
+            <div className="mb-8 md:mb-12 bg-black/60 border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl overflow-hidden">
+              <div className="p-4 md:p-8 border-b border-cyan-500/30 bg-cyan-500/5">
+                <h3 className="text-2xl md:text-3xl font-black text-cyan-400 flex items-center gap-2 md:gap-3">
+                  <span>👨‍💻</span> The Code
                 </h3>
               </div>
               
-              <div className="p-8">
-                <h4 className="text-xl font-black mb-4 text-orange-300">Server Side</h4>
-                <div className="bg-black rounded-2xl border border-orange-500/30 overflow-hidden mb-8">
-                  <div className="px-6 py-3 bg-black/80 border-b border-orange-500/30 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <div className="p-4 md:p-8">
+                <div className="bg-black rounded-xl border border-cyan-500/30 overflow-hidden">
+                  <div className="px-4 py-2 bg-black/80 border-b border-cyan-500/30 flex gap-2">
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500"></div>
                   </div>
-                  <pre className="p-6 text-sm overflow-x-auto font-mono">
-                    <code className="text-orange-400">{`// When a user sends a message
-socket.on('broadcast', (data) => {
-  // Send to everyone EXCEPT the sender
-  socket.broadcast.emit('broadcast', {
-    sender: socket.userName,
-    text: data.text,
-    timestamp: new Date().toLocaleTimeString()
-  });
-  
-  // The sender already knows they sent it!
-  // No need to send it back to them
+                  <pre className="p-4 md:p-6 text-xs md:text-sm overflow-x-auto font-mono">
+                    <code className="text-cyan-400">{`// Send to EVERYONE (including yourself)
+io.emit('notification', {
+  text: 'Server maintenance in 5 minutes!'
 });
 
-// When someone joins
-socket.on('register-user', (data) => {
-  socket.userName = data.userName;
-  
-  // Tell everyone else someone joined
-  socket.broadcast.emit('user-joined', {
-    user: data.userName
-  });
-});`}</code>
-                  </pre>
-                </div>
-
-                <h4 className="text-xl font-black mb-4 text-orange-300">Client Side</h4>
-                <div className="bg-black rounded-2xl border border-orange-500/30 overflow-hidden">
-                  <div className="px-6 py-3 bg-black/80 border-b border-orange-500/30 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  </div>
-                  <pre className="p-6 text-sm overflow-x-auto font-mono">
-                    <code className="text-orange-400">{`// Send a broadcast message
-socket.emit('broadcast', {
-  text: 'Hello everyone!'
-});
-
-// Listen for broadcasts from others
-socket.on('broadcast', (data) => {
-  console.log(data.sender + ': ' + data.text);
-  // This only receives messages from OTHER users
-});
-
-// Listen for join notifications
-socket.on('user-joined', (data) => {
-  console.log(data.user + ' joined!');
+// Send to EVERYONE EXCEPT yourself
+socket.broadcast.emit('user-joined', {
+  name: 'Alex'
 });`}</code>
                   </pre>
                 </div>
               </div>
             </div>
 
-            {/* Key Concepts */}
-            <div className="mb-16 animate-slideUp" style={{ animationDelay: '0.4s' }}>
-              <h3 className="text-3xl font-black mb-8 text-orange-400 flex items-center gap-3">
-                <span>🔑</span>
-                <span>Key Concepts</span>
-              </h3>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/30 rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl mb-3">🚫</div>
-                  <h4 className="text-xl font-black mb-2 text-orange-300">Excludes Sender</h4>
-                  <p className="text-gray-300">The client who sends the broadcast does NOT receive it back</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/30 rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl mb-3">🌐</div>
-                  <h4 className="text-xl font-black mb-2 text-orange-300">Global Reach</h4>
-                  <p className="text-gray-300">Reaches ALL other connected clients on the server</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/30 rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl mb-3">⚡</div>
-                  <h4 className="text-xl font-black mb-2 text-orange-300">Instant Updates</h4>
-                  <p className="text-gray-300">Perfect for real-time notifications and status updates</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/30 rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl mb-3">💡</div>
-                  <h4 className="text-xl font-black mb-2 text-orange-300">Efficient</h4>
-                  <p className="text-gray-300">Avoids redundant messages - sender already knows their action</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Comparison Table */}
-            <div className="mb-16 bg-black/60 backdrop-blur-xl border-2 border-orange-500/30 rounded-3xl overflow-hidden animate-slideUp" style={{ animationDelay: '0.5s' }}>
-              <div className="p-8 border-b border-orange-500/30 bg-orange-500/5">
-                <h3 className="text-3xl font-black text-orange-400 flex items-center gap-3">
-                  <span>📊</span>
-                  <span>Emit Methods Comparison</span>
-                </h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-black/50">
-                    <tr>
-                      <th className="p-4 text-orange-400 font-bold">Method</th>
-                      <th className="p-4 text-orange-400 font-bold">Who Receives?</th>
-                      <th className="p-4 text-orange-400 font-bold">Use Case</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t border-orange-500/10">
-                      <td className="p-4 font-mono text-blue-400">socket.emit()</td>
-                      <td className="p-4 text-gray-300">Only the sender</td>
-                      <td className="p-4 text-gray-300">Personal responses, confirmations</td>
-                    </tr>
-                    <tr className="border-t border-orange-500/10">
-                      <td className="p-4 font-mono text-green-400">io.emit()</td>
-                      <td className="p-4 text-gray-300">Everyone including sender</td>
-                      <td className="p-4 text-gray-300">Server announcements, game state</td>
-                    </tr>
-                    <tr className="border-t border-orange-500/10">
-                      <td className="p-4 font-mono text-orange-400">socket.broadcast.emit()</td>
-                      <td className="p-4 text-gray-300">Everyone EXCEPT sender</td>
-                      <td className="p-4 text-gray-300">User actions, notifications</td>
-                    </tr>
-                    <tr className="border-t border-orange-500/10">
-                      <td className="p-4 font-mono text-purple-400">socket.to(room).emit()</td>
-                      <td className="p-4 text-gray-300">Room members except sender</td>
-                      <td className="p-4 text-gray-300">Room-specific broadcasts</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <div className="text-center animate-slideUp" style={{ animationDelay: '0.6s' }}>
+            <div className="text-center">
               <button
-                onClick={() => setLevel3Phase('practice')}
-                className="px-12 py-6 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-2xl font-black rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/50 flex items-center gap-4 mx-auto"
+                onClick={() => setPhase('practice')}
+                className="px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 md:gap-4 mx-auto shadow-2xl shadow-cyan-500/50"
               >
-                <span>Got it! Let's Practice</span>
-                <span className="text-3xl">→</span>
+                <span>Try It Live!</span>
+                <span className="text-2xl md:text-3xl">→</span>
               </button>
             </div>
 
           </div>
         </div>
-
-        <style jsx>{`
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: translateY(30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          .animate-slideUp {
-            animation: slideUp 0.6s ease-out forwards;
-          }
-        `}</style>
       </div>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // PRACTICE PHASE - REGISTER
-  // ═══════════════════════════════════════════════════════════
-  if (!isRegistered) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
-        {/* Orange/Red Glow Background */}
-        <div className="fixed inset-0 z-0 opacity-30">
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-orange-600 rounded-full blur-[150px]"></div>
-          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-red-600 rounded-full blur-[150px]"></div>
-        </div>
-
-        <div className="relative z-10 min-h-screen flex flex-col p-6">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between max-w-2xl mx-auto w-full">
-            <button
-              onClick={() => setLevel3Phase('theory')}
-              className="px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-orange-500/20"
-            >
-              <span>←</span>
-            </button>
-            
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">⚡</div>
-              <h1 className="text-2xl font-black text-orange-500">LEVEL 3</h1>
-            </div>
-
-            <div className={`px-4 py-2 rounded-lg text-xs font-bold border ${
-              isConnected 
-                ? 'bg-green-500/20 border-green-500 text-green-400' 
-                : 'bg-red-500/20 border-red-500 text-red-400'
-            }`}>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-                <span className="hidden sm:inline">{isConnected ? 'ON' : 'OFF'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="max-w-2xl w-full mx-auto animate-scaleIn">
-
-            {/* Register Form */}
-            <div className="bg-black/60 backdrop-blur-xl border-2 border-orange-500/30 rounded-3xl overflow-hidden">
-              <div className="p-10 border-b border-orange-500/30 bg-orange-500/5 text-center">
-                <div className="text-7xl mb-6">📡</div>
-                <h2 className="text-5xl font-black mb-3 text-orange-400">Join Broadcast</h2>
-                <p className="text-xl text-gray-300">Enter your name to start broadcasting</p>
-              </div>
-
-              <div className="p-10">
-                <div className="space-y-6">
-                  {/* Username Input */}
-                  <div>
-                    <label className="block text-sm font-bold text-orange-300 mb-3">YOUR NAME</label>
-                    <input
-                      type="text"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      placeholder="Enter your username"
-                      maxLength={20}
-                      className="w-full px-6 py-4 bg-black/90 border-2 border-orange-500/30 rounded-2xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-white text-2xl font-bold text-center placeholder-gray-600 transition-all duration-300"
-                    />
-                  </div>
-
-                  {/* Join Button */}
-                  <button
-                    onClick={handleRegister}
-                    disabled={!userName.trim() || !isConnected}
-                    className="w-full px-8 py-5 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-xl font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/50 flex items-center justify-center gap-3"
-                  >
-                    <span>Join Broadcast</span>
-                    <span className="text-2xl">→</span>
-                  </button>
-                </div>
-
-                {/* Info Box */}
-                <div className="mt-8 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-6">
-                  <div className="flex gap-4">
-                    <div className="text-3xl">💡</div>
-                    <div>
-                      <h4 className="font-bold text-orange-300 mb-2">How it works:</h4>
-                      <ul className="text-sm text-gray-300 space-y-1">
-                        <li>• Your messages will be seen by everyone else</li>
-                        <li>• You won't see your own messages (you already sent them!)</li>
-                        <li>• Open multiple tabs to see the broadcast in action</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // PRACTICE PHASE - BROADCAST FEED
-  // ═══════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
-      {/* Orange/Red Glow Background */}
+    <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="fixed inset-0 z-0 opacity-30">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-orange-600 rounded-full blur-[150px]"></div>
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-red-600 rounded-full blur-[150px]"></div>
+        <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="relative z-10 h-screen flex flex-col">
-        {/* Header - Level 1 Style */}
-        <header className="bg-[#0d1529] border-b border-orange-500/30">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30">
+          <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
             <div className="flex items-center justify-between">
-              {/* User Info */}
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">📡</div>
-                <div>
-                  <div className="text-xs text-gray-400">Broadcasting</div>
-                  <div className="text-xl font-black text-orange-400">{userName}</div>
-                </div>
-              </div>
-
-              {/* Title */}
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">⚡</div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                  <span className="text-orange-500">LEVEL 3</span>
-                </h1>
-              </div>
-
-              {/* Leave Button */}
-              <button
-                onClick={handleLeave}
-                className="px-4 py-2 bg-red-500/20 border border-red-500 text-red-400 hover:bg-red-500 hover:text-white font-bold rounded-lg transition-all duration-300 text-sm"
-              >
-                Leave
+              <button onClick={() => setPhase('theory')} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
+                <span>←</span> <span className="hidden sm:inline">Theory</span>
               </button>
+
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="text-2xl md:text-3xl">📡</div>
+                <h1 className="text-lg md:text-2xl font-black text-cyan-400">BROADCAST</h1>
+              </div>
+              
+              <div className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 bg-green-500/20 border-green-500 text-green-400">
+                LIVE
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Broadcast Feed */}
-          <div className="flex-1 flex flex-col">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar-orange">
-              {broadcasts.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                  <div className="text-7xl mb-4">📻</div>
-                  <p className="text-2xl font-bold">Broadcast Feed Active</p>
-                  <p className="text-lg text-gray-600 mt-2">Send a message to broadcast!</p>
-                </div>
-              ) : (
-                <div className="space-y-4 max-w-4xl mx-auto">
-                  {broadcasts.map((msg) => (
-                    <div 
-                      key={msg.id}
-                      className="opacity-0 animate-fadeInUp"
-                    >
-                      <div className={`p-4 rounded-2xl shadow-lg ${
-                        msg.type === 'system'
-                          ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-center'
-                          : 'bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-500/30 text-gray-200'
-                      }`}>
-                        {msg.type !== 'system' && (
-                          <div className="text-xs font-bold opacity-80 mb-2">
-                            <span className="px-2 py-1 bg-black/30 rounded">
-                              [{msg.timestamp}] {msg.sender}
-                            </span>
-                          </div>
-                        )}
-                        <div className="text-lg font-medium break-words">{msg.text}</div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
+        <div className="bg-black/60 backdrop-blur-xl border-b border-cyan-500/20 p-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBroadcastType('all')}
+                className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all ${
+                  broadcastType === 'all'
+                    ? 'bg-cyan-600 text-white border-2 border-cyan-400 shadow-lg shadow-cyan-500/50'
+                    : 'bg-black/60 text-gray-400 border border-cyan-500/30'
+                }`}
+              >
+                <div className="text-2xl mb-1">📢</div>
+                <div className="text-xs md:text-sm">Everyone</div>
+                <div className="text-xs text-cyan-300 mt-1">io.emit()</div>
+              </button>
 
-            {/* Input Area */}
-            <div className="border-t border-orange-500/30 bg-black/60 backdrop-blur-xl p-6">
-              <div className="max-w-4xl mx-auto flex gap-4">
-                <input
-                  type="text"
-                  value={broadcastInput}
-                  onChange={(e) => setBroadcastInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendBroadcast()}
-                  placeholder="Type your broadcast message..."
-                  className="flex-1 px-6 py-4 bg-black/90 border-2 border-orange-500/30 rounded-2xl focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-white text-lg placeholder-gray-600 transition-all duration-300"
-                />
-                <button
-                  onClick={handleSendBroadcast}
-                  disabled={!broadcastInput.trim()}
-                  className="px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/50"
-                >
-                  Broadcast
-                </button>
-              </div>
-              <p className="text-center text-sm text-gray-500 mt-3">
-                💡 Your messages won't appear here - open another tab to see them!
-              </p>
+              <button
+                onClick={() => setBroadcastType('others')}
+                className={`flex-1 px-4 py-3 rounded-xl font-bold transition-all ${
+                  broadcastType === 'others'
+                    ? 'bg-blue-600 text-white border-2 border-blue-400 shadow-lg shadow-blue-500/50'
+                    : 'bg-black/60 text-gray-400 border border-blue-500/30'
+                }`}
+              >
+                <div className="text-2xl mb-1">🔔</div>
+                <div className="text-xs md:text-sm">Others Only</div>
+                <div className="text-xs text-blue-300 mt-1">broadcast.emit()</div>
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Sidebar - Online Users */}
-          <div className="w-80 border-l border-orange-500/30 bg-black/40 backdrop-blur-xl p-6 animate-slideInRight">
-            <h3 className="text-xl font-black mb-6 flex items-center gap-3 text-orange-400">
-              <span>👥</span>
-              <span>Online ({users.length})</span>
-            </h3>
-
-            <div className="space-y-3">
-              {users.map((user, index) => (
-                <div 
-                  key={index}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
-                    user === userName
-                      ? 'bg-orange-500/20 border-orange-500 shadow-lg shadow-orange-500/30'
-                      : 'bg-black/60 border-orange-500/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">
-                      {user === userName ? '👤' : '🙋'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-white">
-                        {user}
-                        {user === userName && (
-                          <span className="ml-2 text-xs text-orange-400">(You)</span>
-                        )}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="container mx-auto max-w-4xl">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                <div className="text-5xl md:text-7xl mb-3 md:mb-4">📡</div>
+                <p className="text-lg md:text-2xl font-bold">Ready to Broadcast!</p>
+                <p className="text-sm md:text-base text-gray-600 mt-2">Choose a type and send a message</p>
+              </div>
+            ) : (
+              <div className="space-y-3 md:space-y-4">
+                {messages.map((msg) => (
+                  <div key={msg.id}>
+                    {msg.type === 'notification' ? (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 md:p-4 text-center">
+                        <div className="text-xs text-yellow-400 mb-1">[{msg.timestamp}]</div>
+                        <div className="text-sm md:text-base text-yellow-300">{msg.text}</div>
                       </div>
-                    </div>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    ) : (
+                      <div className={`${msg.sender === 'You' ? 'text-right' : ''}`}>
+                        <div className={`inline-block max-w-[85%] p-3 md:p-4 rounded-xl md:rounded-2xl ${
+                          msg.sender === 'You'
+                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/50'
+                            : 'bg-black/80 border border-cyan-500/30 text-gray-200'
+                        }`}>
+                          <div className="text-xs opacity-80 mb-1">[{msg.timestamp}] {msg.sender}</div>
+                          <div className="text-sm md:text-lg">{msg.text}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-cyan-500/30 bg-black/60 backdrop-blur-xl p-4">
+          <div className="container mx-auto max-w-4xl">
+            {/* Testing Tips */}
+            <div className="mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💡</div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-yellow-400 mb-2 text-sm md:text-base">How to Test:</h4>
+                  <ul className="text-xs md:text-sm text-gray-300 space-y-1">
+                    <li>• <strong>Open this page in 2 tabs</strong> with different names</li>
+                    <li>• <strong>Select "Everyone"</strong> → Both tabs see the message</li>
+                    <li>• <strong>Select "Others Only"</strong> → Only other tab sees it</li>
+                    <li>• Watch the magic happen in real-time! ✨</li>
+                  </ul>
                 </div>
-              ))}
+              </div>
             </div>
 
-            {/* Info */}
-            <div className="mt-8 bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-              <div className="text-xs text-gray-400">
-                <p className="mb-2">💡 <strong>Remember:</strong> Your broadcasts go to everyone else, but you won't see them here!</p>
-              </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleBroadcast()}
+                placeholder={`Broadcast to ${broadcastType === 'all' ? 'everyone' : 'others only'}...`}
+                className="flex-1 px-4 md:px-6 py-3 md:py-4 bg-black/90 border-2 border-cyan-500/30 rounded-xl md:rounded-2xl focus:border-cyan-500 focus:outline-none text-white text-sm md:text-lg placeholder-gray-600"
+              />
+              <button
+                onClick={handleBroadcast}
+                disabled={!inputMessage.trim()}
+                className={`px-6 md:px-8 py-3 md:py-4 text-white font-bold rounded-xl md:rounded-2xl disabled:opacity-50 transition-all duration-300 transform hover:scale-105 text-sm md:text-base ${
+                  broadcastType === 'all'
+                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/50'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-lg shadow-blue-500/50'
+                }`}
+              >
+                Broadcast
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-fadeInUp {
-          animation: fadeInUp 0.4s ease-out forwards;
-        }
-
-        .animate-slideInRight {
-          animation: slideInRight 0.5s ease-out forwards;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
-        }
-
-        .animate-scaleIn {
-          animation: scaleIn 0.4s ease-out;
-        }
-
-        /* Custom scrollbar with ORANGE GLOW */
-        .custom-scrollbar-orange::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .custom-scrollbar-orange::-webkit-scrollbar-track {
-          background: #000000;
-        }
-
-        .custom-scrollbar-orange::-webkit-scrollbar-thumb {
-          background: #f97316;
-          border-radius: 10px;
-          box-shadow: 0 0 10px #f97316;
-        }
-
-        .custom-scrollbar-orange::-webkit-scrollbar-thumb:hover {
-          background: #ea580c;
-          box-shadow: 0 0 15px #f97316;
-        }
-      `}</style>
     </div>
   );
 }
