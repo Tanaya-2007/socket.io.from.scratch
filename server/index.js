@@ -18,12 +18,15 @@ app.use(cors());
 // Store room data for Level 2
 const rooms = {};
 
+// Store broadcast users for Level 3
+const broadcastUsers = [];
+
 io.on('connection', (socket) => {
   console.log('🎉 User connected:', socket.id);
 
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   // LEVEL 1: Basic Connection & Messages
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   socket.on('message', (data) => {
     console.log('📩 Message received:', data);
     socket.emit('response', {
@@ -33,9 +36,9 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   // LEVEL 2: Rooms
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   socket.on('join-room', ({ roomName, playerName }) => {
     socket.join(roomName);
     socket.roomName = roomName;
@@ -98,12 +101,68 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
+  // LEVEL 3: Broadcast
+  // ═══════════════════════════════════════════════════════════
+  socket.on('register-user', (data) => {
+    socket.userName = data.userName;
+    broadcastUsers.push(data.userName);
+    
+    console.log(`📡 ${data.userName} joined broadcast (Total: ${broadcastUsers.length})`);
+    
+    // Tell the user they're registered
+    socket.emit('user-registered', {
+      users: broadcastUsers
+    });
+    
+    // BROADCAST to everyone else that someone joined
+    socket.broadcast.emit('user-joined', {
+      user: data.userName,
+      users: broadcastUsers
+    });
+  });
+
+  socket.on('broadcast', (data) => {
+    if (socket.userName) {
+      console.log(`📢 Broadcast from ${socket.userName}: ${data.text}`);
+      
+      // BROADCAST to everyone EXCEPT the sender
+      socket.broadcast.emit('broadcast', {
+        sender: socket.userName,
+        text: data.text,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      
+      // Note: The sender does NOT receive their own broadcast
+      // That's the whole point of broadcast!
+    }
+  });
+
+  socket.on('leave-broadcast', () => {
+    if (socket.userName) {
+      const index = broadcastUsers.indexOf(socket.userName);
+      if (index > -1) {
+        broadcastUsers.splice(index, 1);
+      }
+      
+      console.log(`📡 ${socket.userName} left broadcast (Remaining: ${broadcastUsers.length})`);
+      
+      socket.broadcast.emit('user-left', {
+        user: socket.userName,
+        users: broadcastUsers
+      });
+      
+      socket.userName = null;
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // Disconnect Handler
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   socket.on('disconnect', () => {
     console.log('😢 User disconnected:', socket.id);
     
+    // Handle room disconnect
     if (socket.roomName && rooms[socket.roomName]) {
       const roomName = socket.roomName;
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
@@ -115,10 +174,25 @@ io.on('connection', (socket) => {
         delete rooms[roomName];
       }
     }
+    
+    // Handle broadcast disconnect
+    if (socket.userName) {
+      const index = broadcastUsers.indexOf(socket.userName);
+      if (index > -1) {
+        broadcastUsers.splice(index, 1);
+      }
+      socket.broadcast.emit('user-left', {
+        user: socket.userName,
+        users: broadcastUsers
+      });
+    }
   });
 });
 
 const PORT = 4000;
 server.listen(PORT, () => {
   console.log(`🚀 Socket.IO server running on http://localhost:${PORT}`);
+  console.log(`📘 Level 1: Connection & Events`);
+  console.log(`🏠 Level 2: Rooms`);
+  console.log(`📡 Level 3: Broadcast`);
 });
