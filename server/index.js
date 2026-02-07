@@ -1,198 +1,251 @@
 const express = require('express');
 const http = require('http');
-const socketIO = require('socket.io');
+const { Server } = require('socket.io');
 const cors = require('cors');
 
 const app = express();
-const server = http.createServer(app);
+app.use(cors());
 
-const io = socketIO(server, {
+const server = http.createServer(app);
+const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 });
 
-app.use(cors());
-
-// Store room data for Level 2
+// Data storage
 const rooms = {};
 
-// Store broadcast users for Level 3
-const broadcastUsers = [];
+// LEVEL 4: NAMESPACES
+const namespaces = {
+  chat: { users: [], messages: [] },
+  game: { users: [], messages: [] },
+  admin: { users: [], messages: [] }
+};
 
+// Chat Namespace
+const chatNS = io.of('/chat');
+chatNS.on('connection', (socket) => {
+  console.log('User connected to /chat:', socket.id);
+
+  socket.on('join-namespace', ({ username }) => {
+    socket.username = username;
+    namespaces.chat.users.push({ id: socket.id, username });
+    
+    socket.emit('initial-state', {
+      users: namespaces.chat.users,
+      messages: namespaces.chat.messages
+    });
+
+    chatNS.emit('user-joined', {
+      username,
+      users: namespaces.chat.users
+    });
+  });
+
+  socket.on('send-message', ({ text }) => {
+    const message = {
+      id: Date.now(),
+      sender: socket.username,
+      text,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    namespaces.chat.messages.push(message);
+    chatNS.emit('namespace-message', message);
+  });
+
+  socket.on('disconnect', () => {
+    namespaces.chat.users = namespaces.chat.users.filter(u => u.id !== socket.id);
+    chatNS.emit('user-left', { users: namespaces.chat.users });
+  });
+});
+
+// Game Namespace
+const gameNS = io.of('/game');
+gameNS.on('connection', (socket) => {
+  console.log('User connected to /game:', socket.id);
+
+  socket.on('join-namespace', ({ username }) => {
+    socket.username = username;
+    namespaces.game.users.push({ id: socket.id, username });
+    
+    socket.emit('initial-state', {
+      users: namespaces.game.users,
+      messages: namespaces.game.messages
+    });
+
+    gameNS.emit('user-joined', {
+      username,
+      users: namespaces.game.users
+    });
+  });
+
+  socket.on('send-message', ({ text }) => {
+    const message = {
+      id: Date.now(),
+      sender: socket.username,
+      text,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    namespaces.game.messages.push(message);
+    gameNS.emit('namespace-message', message);
+  });
+
+  socket.on('disconnect', () => {
+    namespaces.game.users = namespaces.game.users.filter(u => u.id !== socket.id);
+    gameNS.emit('user-left', { users: namespaces.game.users });
+  });
+});
+
+// Admin Namespace
+const adminNS = io.of('/admin');
+adminNS.on('connection', (socket) => {
+  console.log('User connected to /admin:', socket.id);
+
+  socket.on('join-namespace', ({ username }) => {
+    socket.username = username;
+    namespaces.admin.users.push({ id: socket.id, username });
+    
+    socket.emit('initial-state', {
+      users: namespaces.admin.users,
+      messages: namespaces.admin.messages
+    });
+
+    adminNS.emit('user-joined', {
+      username,
+      users: namespaces.admin.users
+    });
+  });
+
+  socket.on('send-message', ({ text }) => {
+    const message = {
+      id: Date.now(),
+      sender: socket.username,
+      text,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    namespaces.admin.messages.push(message);
+    adminNS.emit('namespace-message', message);
+  });
+
+  socket.on('disconnect', () => {
+    namespaces.admin.users = namespaces.admin.users.filter(u => u.id !== socket.id);
+    adminNS.emit('user-left', { users: namespaces.admin.users });
+  });
+});
+
+// Main namespace (for Level 1, 2, 3)
 io.on('connection', (socket) => {
-  console.log('🎉 User connected:', socket.id);
+  console.log('User connected:', socket.id);
 
-  // ═══════════════════════════════════════════════════════════
-  // LEVEL 1: Basic Connection & Messages
-  // ═══════════════════════════════════════════════════════════
+  // LEVEL 1: Basic events
   socket.on('message', (data) => {
-    console.log('📩 Message received:', data);
+    console.log('Received message:', data);
     socket.emit('response', {
-      text: 'Server received your message!',
+      text: `Server received: "${data}"`,
       yourMessage: data,
       timestamp: new Date().toLocaleTimeString()
     });
   });
 
-  // ═══════════════════════════════════════════════════════════
   // LEVEL 2: Rooms
-  // ═══════════════════════════════════════════════════════════
   socket.on('join-room', ({ roomName, playerName }) => {
     socket.join(roomName);
     socket.roomName = roomName;
     socket.playerName = playerName;
-    
+
     if (!rooms[roomName]) {
       rooms[roomName] = { players: [], messages: [] };
     }
-    
+
     rooms[roomName].players.push({ id: socket.id, name: playerName });
-    
-    console.log(`👤 ${playerName} joined room: ${roomName}`);
-    
+
     socket.emit('joined-room', {
       roomName,
       players: rooms[roomName].players,
       messages: rooms[roomName].messages
     });
-    
+
     socket.to(roomName).emit('player-joined', {
-      player: { id: socket.id, name: playerName },
+      player: playerName,
       players: rooms[roomName].players
     });
   });
 
-  socket.on('room-message', (data) => {
-    const { roomName, message } = data;
-    const messageData = {
+  socket.on('room-message', ({ roomName, message }) => {
+    const msg = {
       id: Date.now(),
       sender: socket.playerName,
       text: message,
       timestamp: new Date().toLocaleTimeString()
     };
-    
+
     if (rooms[roomName]) {
-      rooms[roomName].messages.push(messageData);
+      rooms[roomName].messages.push(msg);
     }
-    
-    io.to(roomName).emit('room-message', messageData);
-    console.log(`💬 [${roomName}] ${socket.playerName}: ${message}`);
+
+    io.to(roomName).emit('room-message', msg);
   });
 
   socket.on('leave-room', () => {
-    if (socket.roomName && rooms[socket.roomName]) {
-      const roomName = socket.roomName;
+    const roomName = socket.roomName;
+    if (roomName && rooms[roomName]) {
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
+
+      socket.to(roomName).emit('player-left', {
+        players: rooms[roomName].players
+      });
+
+      if (rooms[roomName].players.length === 0) {
+        delete rooms[roomName];
+      }
+
       socket.leave(roomName);
-      
-      socket.to(roomName).emit('player-left', {
-        playerId: socket.id,
-        players: rooms[roomName].players
-      });
-      
-      if (rooms[roomName].players.length === 0) {
-        delete rooms[roomName];
-      }
-      
-      socket.roomName = null;
-      socket.playerName = null;
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
   // LEVEL 3: Broadcast
-  // ═══════════════════════════════════════════════════════════
-  socket.on('register-user', (data) => {
-    socket.userName = data.userName;
-    broadcastUsers.push(data.userName);
-    
-    console.log(`📡 ${data.userName} joined broadcast (Total: ${broadcastUsers.length})`);
-    
-    // Tell the user they're registered
-    socket.emit('user-registered', {
-      users: broadcastUsers
-    });
-    
-    // BROADCAST to everyone else that someone joined
-    socket.broadcast.emit('user-joined', {
-      user: data.userName,
-      users: broadcastUsers
+  socket.on('broadcast-all', (message) => {
+    io.emit('broadcast-message', {
+      sender: 'User',
+      text: message,
+      timestamp: new Date().toLocaleTimeString()
     });
   });
 
-  socket.on('broadcast', (data) => {
-    if (socket.userName) {
-      console.log(`📢 Broadcast from ${socket.userName}: ${data.text}`);
-      
-      // BROADCAST to everyone EXCEPT the sender
-      socket.broadcast.emit('broadcast', {
-        sender: socket.userName,
-        text: data.text,
-        timestamp: new Date().toLocaleTimeString()
-      });
-      
-      // Note: The sender does NOT receive their own broadcast
-      // That's the whole point of broadcast!
-    }
+  socket.on('broadcast-others', (message) => {
+    socket.broadcast.emit('broadcast-message', {
+      sender: 'User',
+      text: message,
+      timestamp: new Date().toLocaleTimeString()
+    });
   });
 
-  socket.on('leave-broadcast', () => {
-    if (socket.userName) {
-      const index = broadcastUsers.indexOf(socket.userName);
-      if (index > -1) {
-        broadcastUsers.splice(index, 1);
-      }
-      
-      console.log(`📡 ${socket.userName} left broadcast (Remaining: ${broadcastUsers.length})`);
-      
-      socket.broadcast.emit('user-left', {
-        user: socket.userName,
-        users: broadcastUsers
-      });
-      
-      socket.userName = null;
-    }
-  });
-
-  // ═══════════════════════════════════════════════════════════
-  // Disconnect Handler
-  // ═══════════════════════════════════════════════════════════
   socket.on('disconnect', () => {
-    console.log('😢 User disconnected:', socket.id);
-    
-    // Handle room disconnect
-    if (socket.roomName && rooms[socket.roomName]) {
-      const roomName = socket.roomName;
+    console.log('User disconnected:', socket.id);
+
+    // Clean up room if user was in one
+    const roomName = socket.roomName;
+    if (roomName && rooms[roomName]) {
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
+
       socket.to(roomName).emit('player-left', {
-        playerId: socket.id,
         players: rooms[roomName].players
       });
+
       if (rooms[roomName].players.length === 0) {
         delete rooms[roomName];
       }
-    }
-    
-    // Handle broadcast disconnect
-    if (socket.userName) {
-      const index = broadcastUsers.indexOf(socket.userName);
-      if (index > -1) {
-        broadcastUsers.splice(index, 1);
-      }
-      socket.broadcast.emit('user-left', {
-        user: socket.userName,
-        users: broadcastUsers
-      });
     }
   });
 });
 
 const PORT = 4000;
 server.listen(PORT, () => {
-  console.log(`🚀 Socket.IO server running on http://localhost:${PORT}`);
-  console.log(`📘 Level 1: Connection & Events`);
-  console.log(`🏠 Level 2: Rooms`);
-  console.log(`📡 Level 3: Broadcast`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`📡 Namespaces: /chat, /game, /admin`);
 });

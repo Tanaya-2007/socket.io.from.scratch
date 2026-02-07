@@ -4,6 +4,7 @@ import LevelSelector from './LevelSelector';
 import Level1 from './Level1';
 import Level2 from './Level2';
 import Level3 from './Level3';
+import Level4 from './Level4';
 
 const socket = io('http://localhost:4000');
 
@@ -69,6 +70,14 @@ function App() {
       {currentLevel === 3 && (
         <Level3 
           socket={socket}
+          isConnected={isConnected}
+          onBack={goHome}
+          isTransitioning={isTransitioning}
+        />
+      )}
+
+      {currentLevel === 4 && (
+        <Level4 
           isConnected={isConnected}
           onBack={goHome}
           isTransitioning={isTransitioning}
