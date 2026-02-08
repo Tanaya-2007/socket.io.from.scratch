@@ -9,7 +9,6 @@ function Level4({ isConnected, onBack, isTransitioning }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const [isPhaseTransitioning, setIsPhaseTransitioning] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -39,14 +38,6 @@ function Level4({ isConnected, onBack, isTransitioning }) {
       path: '/admin'
     }
   ];
-
-  const smoothPhaseTransition = (callback) => {
-    setIsPhaseTransitioning(true);
-    setTimeout(() => {
-      callback();
-      setTimeout(() => setIsPhaseTransitioning(false), 50);
-    }, 300);
-  };
 
   useEffect(() => {
     if (selectedNamespace && username) {
@@ -127,6 +118,13 @@ function Level4({ isConnected, onBack, isTransitioning }) {
     setSelectedNamespace(null);
     setMessages([]);
     setOnlineUsers([]);
+    setUsername('');
+    setShowJoinScreen(false);
+    setPhase('theory');
+  };
+
+  const handleBackToTheory = () => {
+    setShowJoinScreen(false);
     setPhase('theory');
   };
 
@@ -161,10 +159,11 @@ function Level4({ isConnected, onBack, isTransitioning }) {
     return colors[ns?.color] || colors.purple;
   };
 
-  // THEORY SCREEN
+  // Theory Screen
+ 
   if (phase === 'theory') {
     return (
-      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning || isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
           <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-purple-600 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-pink-600 rounded-full blur-[120px]"></div>
@@ -181,7 +180,7 @@ function Level4({ isConnected, onBack, isTransitioning }) {
 
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="text-2xl md:text-3xl">⚡</div>
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-400">Level 4</h1>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-400">LEVEL 4</h1>
                 </div>
                 
                 <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
@@ -197,7 +196,6 @@ function Level4({ isConnected, onBack, isTransitioning }) {
           </header>
 
           <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-6xl">
-            
             
             {/* Visual Concept */}
             <div className="mb-8 md:mb-12 bg-black/60 border-2 border-purple-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
@@ -356,10 +354,13 @@ const gameSocket =
               </div>
             </div>
 
-            {/* Try It Live Button */}
+            
             <div className="text-center">
               <button
-                onClick={() => smoothPhaseTransition(() => setShowJoinScreen(true))}
+                onClick={() => {
+                  setShowJoinScreen(true);
+                  setPhase('join');
+                }}
                 className="px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-purple-600 via-pink-600 to-violet-600 hover:from-purple-500 hover:via-pink-500 hover:to-violet-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 md:gap-4 mx-auto shadow-2xl shadow-purple-500/50"
               >
                 <span>Try It Live!</span>
@@ -373,10 +374,12 @@ const gameSocket =
     );
   }
 
-  // JOIN SCREEN (after clicking Try It Live)
-  if (showJoinScreen && !selectedNamespace) {
+ 
+  // Join Screen
+ 
+  if (phase === 'join' && showJoinScreen && !selectedNamespace) {
     return (
-      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
           <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-purple-600 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-pink-600 rounded-full blur-[120px]"></div>
@@ -385,7 +388,7 @@ const gameSocket =
         <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6">
           <div className="max-w-3xl w-full">
             <button
-              onClick={() => smoothPhaseTransition(() => setShowJoinScreen(false))}
+              onClick={handleBackToTheory}
               className="mb-4 md:mb-6 px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base"
             >
               <span>←</span> Back to Theory
@@ -450,12 +453,14 @@ const gameSocket =
     );
   }
 
-  // PRACTICE SCREEN (In Namespace)
+ 
+  // Practice Screen 
+  
   const currentNs = namespaces.find(n => n.id === selectedNamespace);
   const colors = currentNs ? getNamespaceColor(selectedNamespace) : { text: 'text-purple-400', border: 'border-purple-500/30' };
 
   return (
-    <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning || isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="fixed inset-0 z-0 opacity-30">
         <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-purple-600 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-pink-600 rounded-full blur-[120px]"></div>
