@@ -11,6 +11,10 @@ function Level4({ isConnected, onBack, isTransitioning }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
 
   const namespaces = [
     {
@@ -77,6 +81,71 @@ function Level4({ isConnected, onBack, isTransitioning }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const quiz = [
+    {
+      question: "What is a Socket.IO namespace?",
+      options: [
+        "A room for private chat",
+        "A separate endpoint/channel on same server",
+        "A different server",
+        "A user ID"
+      ],
+      correct: 1
+    },
+    {
+      question: "How to create a namespace on server?",
+      options: [
+        "socket.namespace('/chat')",
+        "io.namespace('/chat')",
+        "io.of('/chat')",
+        "socket.of('/chat')"
+      ],
+      correct: 2
+    },
+    {
+      question: "How to connect to namespace on client?",
+      options: [
+        "io('http://localhost:4000/chat')",
+        "socket.join('/chat')",
+        "io.namespace('/chat')",
+        "socket.connect('/chat')"
+      ],
+      correct: 0
+    },
+    {
+      question: "Can one client connect to multiple namespaces?",
+      options: [
+        "No, only one",
+        "Yes, unlimited",
+        "Only 2 max",
+        "Depends on server"
+      ],
+      correct: 1
+    },
+    {
+      question: "What's the main benefit of namespaces?",
+      options: [
+        "Faster connection",
+        "Complete isolation of features",
+        "Better security",
+        "Lower memory"
+      ],
+      correct: 1
+    }
+  ];
+  
+  const calculateScore = () => {
+    let correct = 0;
+    quiz.forEach((q, index) => {
+      if (quizAnswers[index] === q.correct) correct++;
+    });
+    return { correct, total: quiz.length };
+  };
+  
+  const submitQuiz = () => {
+    setQuizSubmitted(true);
+  };
+
   const addMessage = (sender, text, timestamp = null) => {
     setMessages(prev => [...prev, {
       sender,
@@ -108,6 +177,7 @@ function Level4({ isConnected, onBack, isTransitioning }) {
       socketRef.current.emit('send-message', { text: inputMessage });
       addMessage('You', inputMessage);
       setInputMessage('');
+      setHasCompletedDemo(true);
     }
   };
 
@@ -158,6 +228,152 @@ function Level4({ isConnected, onBack, isTransitioning }) {
     };
     return colors[ns?.color] || colors.purple;
   };
+
+  // QUIZ SCREEN
+if (showQuiz) {
+  return (
+    <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
+      <div className="fixed inset-0 z-0 opacity-30">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[150px]"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-[150px]"></div>
+      </div>
+
+      <div className="relative z-10">
+        <header className="bg-[#0d1529] border-b border-purple-500/30 sticky top-0 z-40">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <button onClick={() => setShowQuiz(false)} className="px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20">
+                <span>←</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">⚡</div>
+                <h1 className="text-2xl sm:text-3xl font-black text-purple-500">LEVEL 4 QUIZ</h1>
+              </div>
+              <div className="w-16"></div>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl">
+          {!quizSubmitted ? (
+            <div className="bg-black/60 backdrop-blur-xl border-2 border-purple-500/30 rounded-3xl overflow-hidden">
+              <div className="p-10 border-b border-purple-500/30 bg-purple-500/5">
+                <div className="flex items-center gap-6">
+                  <div className="text-6xl">🧠</div>
+                  <div>
+                    <h2 className="text-4xl font-black text-purple-400 mb-2">Quiz Time</h2>
+                    <p className="text-lg text-gray-300">Test Your Knowledge</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-10 space-y-8">
+                {quiz.map((q, qIndex) => (
+                  <div key={qIndex} className="bg-black/50 p-6 rounded-2xl border border-purple-500/20">
+                    <h3 className="text-xl font-bold text-white mb-4">Q{qIndex + 1}: {q.question}</h3>
+                    <div className="space-y-3">
+                      {q.options.map((option, oIndex) => {
+                        const isSelected = quizAnswers[qIndex] === oIndex;
+                        return (
+                          <button
+                            key={oIndex}
+                            onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
+                            className={`w-full text-left px-6 py-4 rounded-xl font-semibold transition-all ${
+                              isSelected
+                                ? 'bg-purple-500/30 border-2 border-purple-500 text-white'
+                                : 'bg-black/70 border border-purple-500/20 text-gray-300 hover:border-purple-500/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                isSelected ? 'border-purple-500 bg-purple-500' : 'border-purple-500/30'
+                              }`}>
+                                {isSelected && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                              </div>
+                              <span>{option}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-10 border-t border-purple-500/30 bg-black/50">
+                <button
+                  onClick={submitQuiz}
+                  disabled={Object.keys(quizAnswers).length !== quiz.length}
+                  className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xl font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                >
+                  Submit Quiz
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-black/60 backdrop-blur-xl border-2 border-purple-500/30 rounded-3xl overflow-hidden">
+              <div className="p-10 text-center">
+                <div className="text-7xl mb-6">
+                  {(() => {
+                    const { correct, total } = calculateScore();
+                    const percentage = (correct / total) * 100;
+                    return percentage === 100 ? '🏆' : percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪';
+                  })()}
+                </div>
+                
+                <h2 className="text-4xl font-black text-purple-400 mb-4">Quiz Complete!</h2>
+                <div className="text-6xl font-black text-white mb-4">
+                  {calculateScore().correct} / {calculateScore().total}
+                </div>
+                <p className="text-xl text-gray-300 mb-8">
+                  {(() => {
+                    const { correct, total } = calculateScore();
+                    const percentage = (correct / total) * 100;
+                    if (percentage === 100) return 'Perfect Score! 🏆';
+                    if (percentage >= 80) return 'Excellent Work! 🎉';
+                    if (percentage >= 60) return 'Good Job! 👍';
+                    return 'Keep Learning! 💪';
+                  })()}
+                </p>
+
+                <div className="space-y-4 mb-8 text-left">
+                  {quiz.map((q, qIndex) => {
+                    const userAnswer = quizAnswers[qIndex];
+                    const isCorrect = userAnswer === q.correct;
+                    
+                    return (
+                      <div key={qIndex} className={`p-4 rounded-xl border-2 ${
+                        isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl">{isCorrect ? '✓' : '✗'}</div>
+                          <div className="flex-1">
+                            <p className="font-bold text-white mb-2">Q{qIndex + 1}</p>
+                            <p className="text-sm text-gray-300 mb-2">Your answer: {q.options[userAnswer]}</p>
+                            {!isCorrect && (
+                              <p className="text-sm text-green-400">Correct: {q.options[q.correct]}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={onBack}
+                  className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-black rounded-2xl transition-all transform hover:scale-105"
+                >
+                  Back to Levels
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
   // Theory Screen
  
@@ -549,6 +765,21 @@ const gameSocket =
           </div>
         </div>
       </div>
+      {/* Take Test Button */}
+      {hasCompletedDemo && !showQuiz && (
+        <div className="border-t border-purple-500/30 bg-black/60 backdrop-blur-xl p-4">
+          <div className="container mx-auto max-w-4xl text-center">
+            <button
+              onClick={() => setShowQuiz(true)}
+              className="px-12 py-6 bg-gradient-to-r from-purple-600 via-pink-600 to-violet-600 hover:from-purple-500 hover:via-pink-500 hover:to-violet-500 text-white text-2xl font-black rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 flex items-center gap-4 mx-auto"
+            >
+              <span>🧠</span>
+              <span>Take the Test</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

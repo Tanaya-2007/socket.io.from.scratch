@@ -6,6 +6,10 @@ function Level3({ socket, isConnected, onBack, isTransitioning }) {
   const [inputMessage, setInputMessage] = useState('');
   const [broadcastType, setBroadcastType] = useState('all');
   const messagesEndRef = useRef(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
 
   useEffect(() => {
     socket.on('broadcast-message', (data) => {
@@ -20,6 +24,71 @@ function Level3({ socket, isConnected, onBack, isTransitioning }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const quiz = [
+    {
+      question: "What's the difference between io.emit() and socket.broadcast.emit()?",
+      options: [
+        "io.emit() is faster than broadcast",
+        "io.emit() sends to ALL including sender, broadcast excludes sender",
+        "They do the same thing",
+        "broadcast is for rooms only"
+      ],
+      correct: 1
+    },
+    {
+      question: "When would you use socket.broadcast.emit()?",
+      options: [
+        "Server maintenance announcements",
+        "Global chat messages",
+        "User typing indicators or 'user joined' notifications",
+        "Private messages"
+      ],
+      correct: 2
+    },
+    {
+      question: "What happens when you use io.emit('message', data)?",
+      options: [
+        "Only the sender receives the message",
+        "Everyone EXCEPT the sender receives it",
+        "EVERYONE including the sender receives it",
+        "Only users in the same room receive it"
+      ],
+      correct: 2
+    },
+    {
+      question: "Why would you NOT want the sender to receive their own broadcast?",
+      options: [
+        "To save bandwidth",
+        "Because they already know what they sent",
+        "It's a Socket.IO bug",
+        "For security reasons"
+      ],
+      correct: 1
+    },
+    {
+      question: "Which method should you use for a global server announcement?",
+      options: [
+        "socket.emit()",
+        "socket.broadcast.emit()",
+        "io.emit()",
+        "socket.to().emit()"
+      ],
+      correct: 2
+    }
+  ];
+  
+  const calculateScore = () => {
+    let correct = 0;
+    quiz.forEach((q, index) => {
+      if (quizAnswers[index] === q.correct) correct++;
+    });
+    return { correct, total: quiz.length };
+  };
+  
+  const submitQuiz = () => {
+    setQuizSubmitted(true);
+  };
 
   const addMessage = (sender, text, timestamp = null) => {
     setMessages(prev => [...prev, { 
@@ -50,8 +119,171 @@ function Level3({ socket, isConnected, onBack, isTransitioning }) {
         addNotification(`Broadcasted to others: "${inputMessage}"`);
       }
       setInputMessage('');
+      setHasCompletedDemo(true);
     }
   };
+
+  //Quiz Screen
+  if (showQuiz) {
+    return (
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        {/* Cyan/Blue Glow Background */}
+        <div className="fixed inset-0 z-0 opacity-30">
+          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
+        </div>
+
+        <div className="relative z-10">
+          {/* Navbar */}
+          <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30 sticky top-0 z-40">
+            <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={() => setShowQuiz(false)} 
+                  className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base"
+                >
+                  <span>←</span> <span className="hidden sm:inline">Back</span>
+                </button>
+
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="text-2xl md:text-3xl">⚡</div>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-cyan-400">LEVEL 3 QUIZ</h1>
+                </div>
+                
+                <div className="w-16 md:w-24"></div>
+              </div>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-4 md:px-6 py-6 md:py-12">
+            <div className="max-w-4xl mx-auto">
+              
+              {!quizSubmitted ? (
+                // QUIZ QUESTIONS
+                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-cyan-500/30 overflow-hidden">
+                  <div className="p-6 md:p-10 border-b border-cyan-500/30 bg-cyan-500/5">
+                    <div className="flex items-center gap-3 md:gap-6">
+                      <div className="text-4xl md:text-6xl">🧠</div>
+                      <div>
+                        <h2 className="text-2xl md:text-4xl font-black text-cyan-400 mb-2">Quiz Time</h2>
+                        <p className="text-sm md:text-lg text-gray-300">Test Your Knowledge</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 md:p-10 space-y-4 md:space-y-8">
+                    {quiz.map((q, qIndex) => (
+                      <div key={qIndex} className="bg-black/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-cyan-500/20">
+                        <h3 className="text-base md:text-xl font-bold text-white mb-3 md:mb-4">
+                          Q{qIndex + 1}: {q.question}
+                        </h3>
+                        <div className="space-y-2 md:space-y-3">
+                          {q.options.map((option, oIndex) => {
+                            const isSelected = quizAnswers[qIndex] === oIndex;
+                            
+                            return (
+                              <button
+                                key={oIndex}
+                                onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
+                                className={`w-full text-left px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl font-semibold transition-all duration-300 ${
+                                  isSelected
+                                    ? 'bg-cyan-500/30 border-2 border-cyan-500 text-white'
+                                    : 'bg-black/70 border border-cyan-500/20 text-gray-300 hover:border-cyan-500/50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 md:gap-3">
+                                  <div className={`w-4 h-4 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-cyan-500/30'
+                                  }`}>
+                                    {isSelected && <div className="w-1.5 h-1.5 md:w-3 md:h-3 bg-white rounded-full"></div>}
+                                  </div>
+                                  <span className="text-xs md:text-base">{option}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-4 md:p-10 border-t border-cyan-500/30 bg-black/50">
+                    <button
+                      onClick={submitQuiz}
+                      disabled={Object.keys(quizAnswers).length !== quiz.length}
+                      className="w-full px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl md:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                    >
+                      Submit Quiz
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // RESULTS SCREEN
+                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-cyan-500/30 overflow-hidden">
+                  <div className="p-6 md:p-10 text-center">
+                    <div className="text-5xl md:text-7xl mb-4 md:mb-6">
+                      {(() => {
+                        const { correct, total } = calculateScore();
+                        const percentage = (correct / total) * 100;
+                        return percentage === 100 ? '🏆' : percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪';
+                      })()}
+                    </div>
+                    
+                    <h2 className="text-2xl md:text-4xl font-black text-cyan-400 mb-3 md:mb-4">Quiz Complete!</h2>
+                    <div className="text-4xl md:text-6xl font-black text-white mb-3 md:mb-4">
+                      {calculateScore().correct} / {calculateScore().total}
+                    </div>
+                    <p className="text-base md:text-xl text-gray-300 mb-6 md:mb-8">
+                      {(() => {
+                        const { correct, total } = calculateScore();
+                        const percentage = (correct / total) * 100;
+                        if (percentage === 100) return 'Perfect! Broadcast Master! 🏆';
+                        if (percentage >= 80) return 'Excellent work! 🎉';
+                        if (percentage >= 60) return 'Good job! 👍';
+                        return 'Keep learning! 💪';
+                      })()}
+                    </p>
+
+                    <div className="space-y-3 md:space-y-4 mb-6 md:mb-8 text-left">
+                      {quiz.map((q, qIndex) => {
+                        const userAnswer = quizAnswers[qIndex];
+                        const isCorrect = userAnswer === q.correct;
+                        
+                        return (
+                          <div key={qIndex} className={`p-3 md:p-4 rounded-lg md:rounded-xl border-2 ${
+                            isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
+                          }`}>
+                            <div className="flex items-start gap-2 md:gap-3">
+                              <div className="text-xl md:text-2xl">{isCorrect ? '✓' : '✗'}</div>
+                              <div className="flex-1">
+                                <p className="font-bold text-white mb-1 md:mb-2 text-sm md:text-base">Q{qIndex + 1}</p>
+                                <p className="text-xs md:text-sm text-gray-300 mb-1 md:mb-2">Your answer: {q.options[userAnswer]}</p>
+                                {!isCorrect && (
+                                  <p className="text-xs md:text-sm text-green-400">Correct: {q.options[q.correct]}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={onBack}
+                      className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                    >
+                      Back to Levels
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   if (phase === 'theory') {
     return (
@@ -385,6 +617,21 @@ socket.broadcast.emit('user-joined', {
             </div>
           </div>
         </div>
+        {hasCompletedDemo && !showQuiz && (
+          <div className="border-t border-cyan-500/30 bg-black/60 backdrop-blur-xl p-4 md:p-6">
+            <div className="container mx-auto max-w-4xl">
+                            
+              <button
+                onClick={() => setShowQuiz(true)}
+                className="w-full px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 hover:from-cyan-500 hover:via-teal-500 hover:to-blue-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/50 flex items-center justify-center gap-3 md:gap-4"
+              >
+                <span className="text-2xl md:text-3xl">🧠</span>
+                <span>Take the Test</span>
+                <span className="text-2xl md:text-3xl">→</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

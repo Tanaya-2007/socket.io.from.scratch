@@ -9,6 +9,10 @@ function Level2({ socket, isConnected, onBack }) {
   const [roomMessages, setRoomMessages] = useState([]);
   const [roomInput, setRoomInput] = useState('');
   const messagesEndRef = useRef(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
 
   // Socket.IO event listeners for Level 2
   useEffect(() => {
@@ -50,11 +54,76 @@ function Level2({ socket, isConnected, onBack }) {
       });
     }
   };
+  const quiz = [
+    {
+      question: "What does socket.join() do?",
+      options: [
+        "Connects to server",
+        "Joins a specific room",
+        "Sends a message",
+        "Disconnects from server"
+      ],
+      correct: 1
+    },
+    {
+      question: "How to send a message to everyone in a room?",
+      options: [
+        "socket.emit()",
+        "io.emit()",
+        "io.to(roomName).emit()",
+        "socket.send()"
+      ],
+      correct: 2
+    },
+    {
+      question: "What happens when you leave a room?",
+      options: [
+        "Server crashes",
+        "You stop receiving room messages",
+        "Everyone disconnects",
+        "Room gets deleted"
+      ],
+      correct: 1
+    },
+    {
+      question: "Can you join multiple rooms at once?",
+      options: [
+        "No, only one room",
+        "Yes, unlimited rooms",
+        "Only 2 rooms max",
+        "Depends on server"
+      ],
+      correct: 1
+    },
+    {
+      question: "What's the main benefit of rooms?",
+      options: [
+        "Faster connection",
+        "Better security",
+        "Targeted/private messaging",
+        "Lower latency"
+      ],
+      correct: 2
+    }
+  ];
+  
+  const calculateScore = () => {
+    let correct = 0;
+    quiz.forEach((q, index) => {
+      if (quizAnswers[index] === q.correct) correct++;
+    });
+    return { correct, total: quiz.length };
+  };
+  
+  const submitQuiz = () => {
+    setQuizSubmitted(true);
+  };
 
   const handleSendRoomMessage = () => {
     if (roomInput.trim() && currentRoom) {
       socket.emit('room-message', { roomName: currentRoom, message: roomInput });
       setRoomInput('');
+      setHasCompletedDemo(true);
     }
   };
 
@@ -75,10 +144,153 @@ function Level2({ socket, isConnected, onBack }) {
     onBack();
   };
 
+// QUIZ SCREEN
+if (showQuiz) {
+  return (
+    <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
+      <div className="fixed inset-0 z-0 opacity-30">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[150px]"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-[150px]"></div>
+      </div>
 
-  // ═══════════════════════════════════════════════════════════
-  // THEORY PHASE - FULLY RESPONSIVE
-  // ═══════════════════════════════════════════════════════════
+      <div className="relative z-10">
+        <header className="bg-[#0d1529] border-b border-purple-500/30 sticky top-0 z-40">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <button onClick={() => setShowQuiz(false)} className="px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20">
+                <span>←</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">⚡</div>
+                <h1 className="text-2xl sm:text-3xl font-black text-purple-500">LEVEL 2 QUIZ</h1>
+              </div>
+              <div className="w-16"></div>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl">
+          {!quizSubmitted ? (
+            <div className="bg-black/60 backdrop-blur-xl border-2 border-purple-500/30 rounded-3xl overflow-hidden">
+              <div className="p-10 border-b border-purple-500/30 bg-purple-500/5">
+                <div className="flex items-center gap-6">
+                  <div className="text-6xl">🧠</div>
+                  <div>
+                    <h2 className="text-4xl font-black text-purple-400 mb-2">Quiz Time</h2>
+                    <p className="text-lg text-gray-300">Test Your Knowledge</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-10 space-y-8">
+                {quiz.map((q, qIndex) => (
+                  <div key={qIndex} className="bg-black/50 p-6 rounded-2xl border border-purple-500/20">
+                    <h3 className="text-xl font-bold text-white mb-4">Q{qIndex + 1}: {q.question}</h3>
+                    <div className="space-y-3">
+                      {q.options.map((option, oIndex) => {
+                        const isSelected = quizAnswers[qIndex] === oIndex;
+                        return (
+                          <button
+                            key={oIndex}
+                            onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
+                            className={`w-full text-left px-6 py-4 rounded-xl font-semibold transition-all ${
+                              isSelected
+                                ? 'bg-purple-500/30 border-2 border-purple-500 text-white'
+                                : 'bg-black/70 border border-purple-500/20 text-gray-300 hover:border-purple-500/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                isSelected ? 'border-purple-500 bg-purple-500' : 'border-purple-500/30'
+                              }`}>
+                                {isSelected && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                              </div>
+                              <span>{option}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-10 border-t border-purple-500/30 bg-black/50">
+                <button
+                  onClick={submitQuiz}
+                  disabled={Object.keys(quizAnswers).length !== quiz.length}
+                  className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xl font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                >
+                  Submit Quiz
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-black/60 backdrop-blur-xl border-2 border-purple-500/30 rounded-3xl overflow-hidden">
+              <div className="p-10 text-center">
+                <div className="text-7xl mb-6">
+                  {(() => {
+                    const { correct, total } = calculateScore();
+                    const percentage = (correct / total) * 100;
+                    return percentage === 100 ? '🏆' : percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪';
+                  })()}
+                </div>
+                
+                <h2 className="text-4xl font-black text-purple-400 mb-4">Quiz Complete!</h2>
+                <div className="text-6xl font-black text-white mb-4">
+                  {calculateScore().correct} / {calculateScore().total}
+                </div>
+                <p className="text-xl text-gray-300 mb-8">
+                  {(() => {
+                    const { correct, total } = calculateScore();
+                    const percentage = (correct / total) * 100;
+                    if (percentage === 100) return 'Perfect Score! 🏆';
+                    if (percentage >= 80) return 'Excellent Work! 🎉';
+                    if (percentage >= 60) return 'Good Job! 👍';
+                    return 'Keep Learning! 💪';
+                  })()}
+                </p>
+
+                <div className="space-y-4 mb-8 text-left">
+                  {quiz.map((q, qIndex) => {
+                    const userAnswer = quizAnswers[qIndex];
+                    const isCorrect = userAnswer === q.correct;
+                    
+                    return (
+                      <div key={qIndex} className={`p-4 rounded-xl border-2 ${
+                        isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl">{isCorrect ? '✓' : '✗'}</div>
+                          <div className="flex-1">
+                            <p className="font-bold text-white mb-2">Q{qIndex + 1}</p>
+                            <p className="text-sm text-gray-300 mb-2">Your answer: {q.options[userAnswer]}</p>
+                            {!isCorrect && (
+                              <p className="text-sm text-green-400">Correct: {q.options[q.correct]}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={onBack}
+                  className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-black rounded-2xl transition-all transform hover:scale-105"
+                >
+                  Back to Levels
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+  // Theory
+  
   if (level2Phase === 'theory') {
     return (
       <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
@@ -287,7 +499,7 @@ socket.on('room-message', (data) => {
               </div>
             </div>
 
-            {/* Key Concepts - RESPONSIVE */}
+            {/* Key Concepts  */}
             <div className="mb-12 sm:mb-16 animate-slideUp" style={{ animationDelay: '0.4s' }}>
               <h3 className="text-2xl sm:text-3xl font-black mb-6 sm:mb-8 text-purple-400 flex items-center gap-2 sm:gap-3">
                 <span className="text-2xl sm:text-3xl">🔑</span>
@@ -321,7 +533,7 @@ socket.on('room-message', (data) => {
               </div>
             </div>
 
-            {/* CTA Button - FULLY RESPONSIVE */}
+           
             <div className="text-center animate-slideUp" style={{ animationDelay: '0.5s' }}>
               <button
                 onClick={() => setLevel2Phase('practice')}
@@ -364,13 +576,12 @@ socket.on('room-message', (data) => {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // PRACTICE PHASE - JOIN ROOM - RESPONSIVE
-  // ═══════════════════════════════════════════════════════════
+  // PRACTICE PHASE - JOIN ROOM - 
+
   if (!currentRoom) {
     return (
       <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
-        {/* Purple Glow Background */}
+       
         <div className="fixed inset-0 z-0 opacity-30">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[150px]"></div>
           <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-[150px]"></div>
@@ -501,9 +712,8 @@ socket.on('room-message', (data) => {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // PRACTICE PHASE - IN ROOM CHAT - RESPONSIVE
-  // ═══════════════════════════════════════════════════════════
+  // PRACTICE PHASE - IN ROOM CHAT - 
+ 
   return (
     <div className="min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden animate-fadeIn">
       {/* Purple Glow Background */}
@@ -513,7 +723,7 @@ socket.on('room-message', (data) => {
       </div>
 
       <div className="relative z-10 h-screen flex flex-col">
-        {/* Header - Responsive */}
+        {/* Header  */}
         <header className="bg-[#0d1529] border-b border-purple-500/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div className="flex items-center justify-between">
@@ -526,7 +736,7 @@ socket.on('room-message', (data) => {
                 </div>
               </div>
 
-              {/* Title - Hidden on small screens */}
+              {/* Title */}
               <div className="hidden md:flex items-center gap-3">
                 <div className="text-3xl">⚡</div>
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
@@ -545,7 +755,7 @@ socket.on('room-message', (data) => {
           </div>
         </header>
 
-        {/* Main Content - Chat - Responsive */}
+        {/* Main Content - Chat -  */}
         <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
           {/* Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
@@ -650,6 +860,21 @@ socket.on('room-message', (data) => {
             </div>
           </div>
         </div>
+        {/* Take Test */}
+      {hasCompletedDemo && !showQuiz && (
+        <div className="border-t border-purple-500/30 bg-black/60 backdrop-blur-xl p-4 sm:p-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <button
+              onClick={() => setShowQuiz(true)}
+              className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-lg sm:text-2xl font-black rounded-2xl sm:rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 flex items-center justify-center gap-3 sm:gap-4 mx-auto"
+            >
+              <span>🧠</span>
+              <span>Take the Test</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
       </div>
 
       <style jsx>{`

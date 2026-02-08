@@ -194,7 +194,7 @@ function Level1({ socket, isConnected, onBack, isTransitioning }) {
                 </button>
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="text-2xl md:text-3xl">⚡</div>
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-blue-500">QUIZ</h1>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-blue-500">Level 1 Quiz</h1>
                 </div>
                 <div className="w-16 md:w-24"></div>
               </div>
