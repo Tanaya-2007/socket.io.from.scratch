@@ -1,152 +1,51 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const socketIO = require('socket.io');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
-
 const server = http.createServer(app);
-const io = new Server(server, {
+
+const io = socketIO(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
   }
 });
 
-// Data storage
+app.use(cors());
+
+// ═══════════════════════════════════════════════════════════
+// GLOBAL DATA STORES (OUTSIDE CONNECTION HANDLER!)
+// ═══════════════════════════════════════════════════════════
+
+// Store room data for Level 2
 const rooms = {};
 
-// LEVEL 4: NAMESPACES
-const namespaces = {
-  chat: { users: [], messages: [] },
-  game: { users: [], messages: [] },
-  admin: { users: [], messages: [] }
-};
+// Store global users for Level 3
+const globalUsers = [];
 
-// Chat Namespace
-const chatNS = io.of('/chat');
-chatNS.on('connection', (socket) => {
-  console.log('User connected to /chat:', socket.id);
+// Store user game data for Level 5 (gold and inventory per socket)
+const userGameData = {};
 
-  socket.on('join-namespace', ({ username }) => {
-    socket.username = username;
-    namespaces.chat.users.push({ id: socket.id, username });
-    
-    socket.emit('initial-state', {
-      users: namespaces.chat.users,
-      messages: namespaces.chat.messages
-    });
+// ═══════════════════════════════════════════════════════════
+// CONNECTION HANDLER
+// ═══════════════════════════════════════════════════════════
 
-    chatNS.emit('user-joined', {
-      username,
-      users: namespaces.chat.users
-    });
-  });
-
-  socket.on('send-message', ({ text }) => {
-    const message = {
-      id: Date.now(),
-      sender: socket.username,
-      text,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    namespaces.chat.messages.push(message);
-    chatNS.emit('namespace-message', message);
-  });
-
-  socket.on('disconnect', () => {
-    namespaces.chat.users = namespaces.chat.users.filter(u => u.id !== socket.id);
-    chatNS.emit('user-left', { users: namespaces.chat.users });
-  });
-});
-
-// Game Namespace
-const gameNS = io.of('/game');
-gameNS.on('connection', (socket) => {
-  console.log('User connected to /game:', socket.id);
-
-  socket.on('join-namespace', ({ username }) => {
-    socket.username = username;
-    namespaces.game.users.push({ id: socket.id, username });
-    
-    socket.emit('initial-state', {
-      users: namespaces.game.users,
-      messages: namespaces.game.messages
-    });
-
-    gameNS.emit('user-joined', {
-      username,
-      users: namespaces.game.users
-    });
-  });
-
-  socket.on('send-message', ({ text }) => {
-    const message = {
-      id: Date.now(),
-      sender: socket.username,
-      text,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    namespaces.game.messages.push(message);
-    gameNS.emit('namespace-message', message);
-  });
-
-  socket.on('disconnect', () => {
-    namespaces.game.users = namespaces.game.users.filter(u => u.id !== socket.id);
-    gameNS.emit('user-left', { users: namespaces.game.users });
-  });
-});
-
-// Admin Namespace
-const adminNS = io.of('/admin');
-adminNS.on('connection', (socket) => {
-  console.log('User connected to /admin:', socket.id);
-
-  socket.on('join-namespace', ({ username }) => {
-    socket.username = username;
-    namespaces.admin.users.push({ id: socket.id, username });
-    
-    socket.emit('initial-state', {
-      users: namespaces.admin.users,
-      messages: namespaces.admin.messages
-    });
-
-    adminNS.emit('user-joined', {
-      username,
-      users: namespaces.admin.users
-    });
-  });
-
-  socket.on('send-message', ({ text }) => {
-    const message = {
-      id: Date.now(),
-      sender: socket.username,
-      text,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    namespaces.admin.messages.push(message);
-    adminNS.emit('namespace-message', message);
-  });
-
-  socket.on('disconnect', () => {
-    namespaces.admin.users = namespaces.admin.users.filter(u => u.id !== socket.id);
-    adminNS.emit('user-left', { users: namespaces.admin.users });
-  });
-});
-
-// Main namespace (for Level 1, 2, 3)
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('🎉 User connected:', socket.id);
 
-  // LEVEL 1: Basic events
+  // Initialize game data for this user (Level 5)
+  userGameData[socket.id] = {
+    gold: 100,
+    inventory: []
+  };
+
+  // LEVEL 1: Basic Connection & Messages
   socket.on('message', (data) => {
-    console.log('Received message:', data);
+    console.log('📩 Message received:', data);
     socket.emit('response', {
-      text: `Server received: "${data}"`,
+      text: 'Server received your message!',
       yourMessage: data,
       timestamp: new Date().toLocaleTimeString()
     });
@@ -157,95 +56,194 @@ io.on('connection', (socket) => {
     socket.join(roomName);
     socket.roomName = roomName;
     socket.playerName = playerName;
-
+    
     if (!rooms[roomName]) {
       rooms[roomName] = { players: [], messages: [] };
     }
-
+    
     rooms[roomName].players.push({ id: socket.id, name: playerName });
-
+    
+    console.log(`👤 ${playerName} joined room: ${roomName}`);
+    
     socket.emit('joined-room', {
       roomName,
       players: rooms[roomName].players,
       messages: rooms[roomName].messages
     });
-
+    
     socket.to(roomName).emit('player-joined', {
-      player: playerName,
+      player: { id: socket.id, name: playerName },
       players: rooms[roomName].players
     });
   });
 
-  socket.on('room-message', ({ roomName, message }) => {
-    const msg = {
+  socket.on('room-message', (data) => {
+    const { roomName, message } = data;
+    const messageData = {
       id: Date.now(),
       sender: socket.playerName,
       text: message,
       timestamp: new Date().toLocaleTimeString()
     };
-
+    
     if (rooms[roomName]) {
-      rooms[roomName].messages.push(msg);
+      rooms[roomName].messages.push(messageData);
     }
-
-    io.to(roomName).emit('room-message', msg);
+    
+    io.to(roomName).emit('room-message', messageData);
+    console.log(`💬 [${roomName}] ${socket.playerName}: ${message}`);
   });
 
   socket.on('leave-room', () => {
-    const roomName = socket.roomName;
-    if (roomName && rooms[roomName]) {
+    if (socket.roomName && rooms[socket.roomName]) {
+      const roomName = socket.roomName;
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
-
+      socket.leave(roomName);
+      
       socket.to(roomName).emit('player-left', {
+        playerId: socket.id,
         players: rooms[roomName].players
       });
-
+      
       if (rooms[roomName].players.length === 0) {
         delete rooms[roomName];
       }
-
-      socket.leave(roomName);
+      
+      socket.roomName = null;
+      socket.playerName = null;
     }
   });
 
-  // LEVEL 3: Broadcast
-  socket.on('broadcast-all', (message) => {
-    io.emit('broadcast-message', {
-      sender: 'User',
-      text: message,
-      timestamp: new Date().toLocaleTimeString()
+
+  // LEVEL 3: Global Server Chat
+  
+  socket.on('register-user', (data) => {
+    socket.userName = data.userName;
+    globalUsers.push(data.userName);
+    
+    console.log(`🌐 ${data.userName} joined global chat (Total: ${globalUsers.length})`);
+    
+    socket.emit('user-registered', {
+      users: globalUsers
+    });
+    
+    io.emit('user-joined', {
+      user: data.userName,
+      users: globalUsers
     });
   });
 
-  socket.on('broadcast-others', (message) => {
-    socket.broadcast.emit('broadcast-message', {
-      sender: 'User',
-      text: message,
-      timestamp: new Date().toLocaleTimeString()
-    });
+  socket.on('global-message', (data) => {
+    if (socket.userName) {
+      console.log(`💬 Global from ${socket.userName}: ${data.text}`);
+      
+      io.emit('global-message', {
+        sender: socket.userName,
+        text: data.text,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    }
   });
 
+  socket.on('leave-global', () => {
+    if (socket.userName) {
+      const index = globalUsers.indexOf(socket.userName);
+      if (index > -1) {
+        globalUsers.splice(index, 1);
+      }
+      
+      console.log(`🌐 ${socket.userName} left global chat (Remaining: ${globalUsers.length})`);
+      
+      io.emit('user-left', {
+        user: socket.userName,
+        users: globalUsers
+      });
+      
+      socket.userName = null;
+    }
+  });
+
+ 
+  // LEVEL 5: ACKNOWLEDGEMENTS
+
+  socket.on('buy-item', (data, acknowledgement) => {
+    const userData = userGameData[socket.id];
+    
+    console.log(`🛒 ${socket.id} attempting to buy ${data.itemName} for ${data.price}G`);
+    console.log(`   Current gold: ${userData.gold}G`);
+
+    // Check if user has enough gold
+    if (userData.gold >= data.price) {
+      // Deduct gold and add item
+      userData.gold -= data.price;
+      userData.inventory.push(data.itemId);
+
+      console.log(`✅ Purchase successful! New gold: ${userData.gold}G`);
+
+      // Send SUCCESS acknowledgement back to client
+      acknowledgement({
+        success: true,
+        message: `${data.itemName} purchased!`,
+        gold: userData.gold,
+        inventory: userData.inventory
+      });
+    } else {
+      console.log(`❌ Not enough gold! Needed: ${data.price}G, Have: ${userData.gold}G`);
+
+      // Send FAILURE acknowledgement back to client
+      acknowledgement({
+        success: false,
+        message: `Not enough gold! Need ${data.price}G, you have ${userData.gold}G`,
+        gold: userData.gold,
+        inventory: userData.inventory
+      });
+    }
+  });
+
+  
+  // DISCONNECT HANDLER
+ 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-
-    // Clean up room if user was in one
-    const roomName = socket.roomName;
-    if (roomName && rooms[roomName]) {
+    console.log('😢 User disconnected:', socket.id);
+    
+    // Clean up Level 2 (rooms)
+    if (socket.roomName && rooms[socket.roomName]) {
+      const roomName = socket.roomName;
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
-
       socket.to(roomName).emit('player-left', {
+        playerId: socket.id,
         players: rooms[roomName].players
       });
-
       if (rooms[roomName].players.length === 0) {
         delete rooms[roomName];
       }
+    }
+    
+    // Clean up Level 3 (global users)
+    if (socket.userName) {
+      const index = globalUsers.indexOf(socket.userName);
+      if (index > -1) {
+        globalUsers.splice(index, 1);
+      }
+      io.emit('user-left', {
+        user: socket.userName,
+        users: globalUsers
+      });
+    }
+
+    // Clean up Level 5 (game data) 
+    if (userGameData[socket.id]) {
+      delete userGameData[socket.id];
+      console.log(`🗑️ Cleaned up game data for ${socket.id}`);
     }
   });
 });
 
 const PORT = 4000;
 server.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📡 Namespaces: /chat, /game, /admin`);
+  console.log(`
+ 🚀 Socket.IO Server Running!                             
+  📍 http://localhost:${PORT}                                
+
+  `);
 });
