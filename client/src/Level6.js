@@ -21,7 +21,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
       icon: "⚠️",
       description: "Learn about connection failures and how to handle them",
       example: "Like losing WiFi - your phone shows 'No Internet' and tries to reconnect",
-      task: "Read the concept and click 'Got it!'",
+      task: "Read the concept and click 'Complete'",
       canComplete: () => true,
       showDemo: false
     },
@@ -209,7 +209,9 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
   const canCompleteCurrentStep = currentStepData.canComplete();
   const isStepCompleted = completedSteps.includes(currentStep);
 
-  // QUIZ SCREEN
+  // ═══════════════════════════════════════════════════════════
+  // QUIZ SCREEN - FULLY WORKING
+  // ═══════════════════════════════════════════════════════════
   if (showQuiz) {
     return (
       <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
@@ -227,7 +229,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                 </button>
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="text-2xl md:text-3xl">⚡</div>
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-500">QUIZ</h1>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-500">LEVEL 6 QUIZ</h1>
                 </div>
                 <div className="w-16 md:w-24"></div>
               </div>
@@ -243,7 +245,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                       <div className="text-4xl md:text-6xl">🧠</div>
                       <div>
                         <h2 className="text-2xl md:text-4xl font-black text-purple-400 mb-2">Error Handling Quiz!</h2>
-                        <p className="text-sm md:text-lg text-gray-300">Test your knowledge</p>
+                        <p className="text-sm md:text-lg text-gray-300">Test your knowledge - {quiz.length} questions</p>
                       </div>
                     </div>
                   </div>
@@ -289,7 +291,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                       disabled={Object.keys(quizAnswers).length !== quiz.length}
                       className="w-full px-6 md:px-8 py-3 md:py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl md:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
                     >
-                      Submit Quiz
+                      Submit Quiz ({Object.keys(quizAnswers).length}/{quiz.length} answered)
                     </button>
                   </div>
                 </div>
@@ -304,7 +306,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                       })()}
                     </div>
                     
-                    <h2 className="text-2xl md:text-4xl font-black text-purple-400 mb-3 md:mb-4">Complete!</h2>
+                    <h2 className="text-2xl md:text-4xl font-black text-purple-400 mb-3 md:mb-4">Quiz Complete!</h2>
                     <div className="text-4xl md:text-6xl font-black text-white mb-3 md:mb-4">
                       {calculateScore().correct} / {calculateScore().total}
                     </div>
@@ -325,15 +327,15 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                         const isCorrect = userAnswer === q.correct;
                         return (
                           <div key={qIndex} className={`p-3 md:p-4 rounded-lg md:rounded-xl border-2 ${
-                            isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-purple-500/10 border-purple-500/50'
+                            isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
                           }`}>
                             <div className="flex items-start gap-2 md:gap-3">
                               <div className="text-xl md:text-2xl">{isCorrect ? '✓' : '✗'}</div>
                               <div className="flex-1">
-                                <p className="font-bold text-white mb-1 md:mb-2 text-sm md:text-base">Q{qIndex + 1}</p>
-                                <p className="text-xs md:text-sm text-gray-300 mb-1 md:mb-2">Your: {q.options[userAnswer]}</p>
+                                <p className="font-bold text-white mb-1 md:mb-2 text-sm md:text-base">Q{qIndex + 1}: {q.question}</p>
+                                <p className="text-xs md:text-sm text-gray-300 mb-1 md:mb-2">Your answer: {q.options[userAnswer]}</p>
                                 {!isCorrect && (
-                                  <p className="text-xs md:text-sm text-green-400">Correct: {q.options[q.correct]}</p>
+                                  <p className="text-xs md:text-sm text-green-400">Correct answer: {q.options[q.correct]}</p>
                                 )}
                               </div>
                             </div>
@@ -358,7 +360,9 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
     );
   }
 
-  // MAIN SCREEN
+  // ═══════════════════════════════════════════════════════════
+  // MAIN LEVEL 6 SCREEN
+  // ═══════════════════════════════════════════════════════════
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="fixed inset-0 z-0 opacity-30">
@@ -383,13 +387,13 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
               <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
                 connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500 text-green-400' :
                 connectionStatus === 'reconnecting' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' :
-                'bg-purple-500/20 border-purple-500 text-purple-400'
+                'bg-red-500/20 border-red-500 text-red-400'
               }`}>
                 <div className="flex items-center gap-1.5 md:gap-2">
                   <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${
                     connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
                     connectionStatus === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
-                    'bg-purple-500'
+                    'bg-red-500'
                   }`}></div>
                   <span className="hidden sm:inline">
                     {connectionStatus === 'connected' ? 'CONNECTED' :
@@ -444,7 +448,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                     STEP {currentStep + 1}/{steps.length}
                   </span>
                   {isStepCompleted && (
-                    <span className="px-2 md:px-4 py-1 md:py-2 bg-green-500/20 border border-green-500 text-green-400 rounded-full font-bold">✓</span>
+                    <span className="px-2 md:px-4 py-1 md:py-2 bg-green-500/20 border border-green-500 text-green-400 rounded-full font-bold">✓ COMPLETED</span>
                   )}
                 </div>
                 
@@ -458,7 +462,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                   </div>
                 </div>
 
-                <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-6">
+                <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-xl md:rounded-2xl p-4 md:p-6">
                   <div className="flex items-start gap-3 md:gap-4">
                     <span className="text-2xl md:text-3xl">💡</span>
                     <div>
@@ -478,31 +482,29 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                   </h3>
 
                   {/* Control Buttons */}
-                  <div className="flex gap-3 mb-4">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     <button
                       onClick={handleForceDisconnect}
                       disabled={!isConnected || forcedDisconnect}
-                      className="flex-1 px-4 py-3 rounded-xl font-bold bg-purple-600 hover:bg-purple-500 text-white border-2 border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="px-4 py-3 rounded-xl font-bold bg-red-600 hover:bg-red-500 text-white border-2 border-red-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       <div className="text-2xl mb-1">🔌</div>
-                      <div className="text-xs md:text-sm">Force Disconnect</div>
+                      <div className="text-xs md:text-sm">Disconnect</div>
                     </button>
                     <button
                       onClick={handleForceReconnect}
                       disabled={isConnected && !forcedDisconnect}
-                      className="flex-1 px-4 py-3 rounded-xl font-bold bg-green-600 hover:bg-green-500 text-white border-2 border-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="px-4 py-3 rounded-xl font-bold bg-green-600 hover:bg-green-500 text-white border-2 border-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       <div className="text-2xl mb-1">🔄</div>
-                      <div className="text-xs md:text-sm">Force Reconnect</div>
+                      <div className="text-xs md:text-sm">Reconnect</div>
                     </button>
                   </div>
                   
                   {/* Error Log */}
                   <div className="bg-black rounded-xl border border-purple-500/30 overflow-hidden mb-4">
                     <div className="px-4 py-3 bg-black/90 border-b border-purple-500/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 font-mono">Error Console</span>
-                      </div>
+                      <span className="text-xs text-gray-400 font-mono">Error Console</span>
                       <span className="px-2 py-1 border border-purple-500/50 text-xs font-bold rounded-full bg-purple-500/20 text-purple-400">
                         {errorLog.length} events
                       </span>
@@ -541,7 +543,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                       ) : (
                         connectionEvents.slice(-5).reverse().map((event) => (
                           <div key={event.id} className={`p-2 rounded border-l-4 text-xs ${
-                            event.type === 'disconnect' ? 'bg-purple-500/10 border-purple-500' :
+                            event.type === 'disconnect' ? 'bg-red-500/10 border-red-500' :
                             event.type === 'reconnect' ? 'bg-green-500/10 border-green-500' :
                             event.type === 'reconnect_attempt' ? 'bg-yellow-500/10 border-yellow-500' :
                             'bg-orange-500/10 border-orange-500'
@@ -586,7 +588,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                         className="mt-3 md:mt-6 px-4 md:px-8 py-2 md:py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 text-sm md:text-lg"
                       >
                         <span className="text-base md:text-2xl">✓</span>
-                        <span>Complete</span>
+                        <span>Complete Step</span>
                       </button>
                     )}
                   </div>
@@ -599,7 +601,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                   disabled={currentStep === 0}
                   className="w-full sm:w-auto px-4 md:px-8 py-2 md:py-4 bg-black/90 border border-white/20 text-white font-bold rounded-lg md:rounded-2xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 md:gap-3 text-sm md:text-lg order-2 sm:order-1"
                 >
-                  <span>←</span> Prev
+                  <span>←</span> Previous
                 </button>
                 
                 <div className="text-center order-1 sm:order-2">
@@ -612,7 +614,7 @@ function Level6({ socket, isConnected, onBack, isTransitioning }) {
                   disabled={!isStepCompleted}
                   className="w-full sm:w-auto px-4 md:px-8 py-2 md:py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg md:rounded-2xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 md:gap-3 text-sm md:text-lg order-3"
                 >
-                  {currentStep === steps.length - 1 ? 'Quiz' : 'Next'} <span>→</span>
+                  {currentStep === steps.length - 1 ? '🧠 Take Quiz' : 'Next'} <span>→</span>
                 </button>
               </div>
             </div>
