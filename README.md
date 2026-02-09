@@ -13,6 +13,7 @@ This is a hands-on learning journey for Socket.IO, built step-by-step.
 - **03-broadcast** - Broadcasting messages
 - **04-Namespace** - Creating isolated environment
 - **05-Acknowledgement and callbacks** - Server timers
+- **06-Error Handling** - Handle disconnections and auto-reconnect gracefully
 
 ## 🛠️ Tech Stack
 
