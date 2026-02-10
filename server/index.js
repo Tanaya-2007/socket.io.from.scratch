@@ -265,32 +265,85 @@ io.on('connection', (socket) => {
       }
     });
 
-    // Level 8: Custom Events
+    //Level 8: Custom Events 
+      const typingTexts = [
+        "The quick brown fox jumps over the lazy dog",
+        "Socket.IO makes real-time communication easy and fun",
+        "Custom events help organize your code beautifully",
+        "Practice makes perfect when learning to type fast"
+      ];
 
-      socket.on('game:join', (data) => {
+      socket.on('race:join', (data) => {
         socket.playerName = data.playerName;
-        console.log(`🎮 ${data.playerName} joined the game`);
+        console.log(`⌨️ ${data.playerName} joined typing race`);
+      });
+
+      socket.on('race:start', () => {
+        const randomText = typingTexts[Math.floor(Math.random() * typingTexts.length)];
+        socket.startTime = Date.now();
         
-        socket.emit('game:joined', {
-          playerName: data.playerName,
-          health: 100,
-          score: 0
+        console.log(`🏁 ${socket.playerName} starts race`);
+        
+        socket.emit('race:started', {
+          text: randomText,
+          duration: 60
         });
+
+        // Timer countdown
+        let timeLeft = 60;
+        const timer = setInterval(() => {
+          timeLeft--;
+          socket.emit('race:tick', { timeLeft });
+          
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            socket.emit('race:finished', {
+              wpm: 0,
+              accuracy: 0
+            });
+          }
+        }, 1000);
+
+        socket.raceTimer = timer;
       });
 
-      socket.on('game:attack', () => {
-        console.log(`⚔️ ${socket.playerName} attacks!`);
-        socket.emit('game:attack', { damage: 20 });
+      socket.on('race:typing', (data) => {
+        const { typed, target } = data;
+        
+        // Calculate WPM (words per minute)
+        const timeElapsed = (Date.now() - socket.startTime) / 1000 / 60; // in minutes
+        const wordsTyped = typed.trim().split(' ').length;
+        const wpm = timeElapsed > 0 ? Math.round(wordsTyped / timeElapsed) : 0;
+        
+        // Calculate accuracy
+        let correct = 0;
+        for (let i = 0; i < typed.length; i++) {
+          if (typed[i] === target[i]) correct++;
+        }
+        const accuracy = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+        
+        socket.emit('race:update', { wpm, accuracy });
       });
 
-      socket.on('game:heal', () => {
-        console.log(`💚 ${socket.playerName} heals!`);
-        socket.emit('game:heal', { amount: 30 });
-      });
+      socket.on('race:complete', (data) => {
+        if (socket.raceTimer) {
+          clearInterval(socket.raceTimer);
+        }
 
-      socket.on('game:collectStar', () => {
-        console.log(`⭐ ${socket.playerName} collects star!`);
-        socket.emit('game:score', { score: Math.floor(Math.random() * 100) + 10 });
+        const { typed, target } = data;
+        const timeElapsed = (Date.now() - socket.startTime) / 1000 / 60;
+        const wordsTyped = typed.trim().split(' ').length;
+        const wpm = Math.round(wordsTyped / timeElapsed);
+        
+        let correct = 0;
+        for (let i = 0; i < typed.length; i++) {
+          if (typed[i] === target[i]) correct++;
+        }
+        const accuracy = Math.round((correct / typed.length) * 100);
+
+        console.log(`🏆 ${socket.playerName} finished! WPM: ${wpm} | Accuracy: ${accuracy}%`);
+
+        socket.emit('race:finished', { wpm, accuracy });
       });
 });
 
