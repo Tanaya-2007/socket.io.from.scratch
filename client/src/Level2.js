@@ -335,25 +335,6 @@ if (showQuiz) {
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="border-t border-purple-500/20 bg-[#0a0f1e] px-4 sm:px-6 lg:px-8 py-2 sm:py-3">
-              <div className="container mx-auto">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-400 tracking-wide">PROGRESS</span>
-                  <span className="text-lg sm:text-xl font-black text-purple-400">0%</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                  <div className="flex-1 h-2 rounded-full bg-white/10"></div>
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-600">
-                  <span>🏠</span>
-                  <span>💬</span>
-                  <span>📊</span>
-                </div>
-              </div>
-            </div>
           </header>
 
           {/* Theory Content - Responsive */}

@@ -264,6 +264,34 @@ io.on('connection', (socket) => {
         });
       }
     });
+
+    // Level 8: Custom Events
+
+      socket.on('game:join', (data) => {
+        socket.playerName = data.playerName;
+        console.log(`🎮 ${data.playerName} joined the game`);
+        
+        socket.emit('game:joined', {
+          playerName: data.playerName,
+          health: 100,
+          score: 0
+        });
+      });
+
+      socket.on('game:attack', () => {
+        console.log(`⚔️ ${socket.playerName} attacks!`);
+        socket.emit('game:attack', { damage: 20 });
+      });
+
+      socket.on('game:heal', () => {
+        console.log(`💚 ${socket.playerName} heals!`);
+        socket.emit('game:heal', { amount: 30 });
+      });
+
+      socket.on('game:collectStar', () => {
+        console.log(`⭐ ${socket.playerName} collects star!`);
+        socket.emit('game:score', { score: Math.floor(Math.random() * 100) + 10 });
+      });
 });
 
 
