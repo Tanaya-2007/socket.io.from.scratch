@@ -150,6 +150,26 @@ function LevelSelector({ isConnected, onSelectLevel, isTransitioning }) {
                 </div>
               </div>
             </button>
+
+            {/* Level 7 */}
+            <button
+              onClick={() => onSelectLevel(7)}
+              className="group relative bg-black/60 backdrop-aqua-xl border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10 hover:border-cyan-400 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/30 transition-all duration-500 text-left overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <div className="text-5xl md:text-6xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300">🛡️</div>
+                <div className="mb-4 md:mb-6">
+                  <div className="text-xs md:text-sm font-bold text-cyan-400 mb-1 md:mb-2">LEVEL 7</div>
+                  <h3 className="text-2xl md:text-4xl font-black mb-2 md:mb-3 text-white">Middleware</h3>
+                  <p className="text-sm md:text-lg text-gray-400">Guard your connections! Run code BEFORE accepting or rejecting connections.</p>
+                </div>
+                <div className="flex items-center gap-2 md:gap-3 text-cyan-400 font-bold text-sm md:text-base">
+                  <span>Start Learning</span>
+                  <span className="group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+              </div>
+            </button>
           
           </div>
         </div>

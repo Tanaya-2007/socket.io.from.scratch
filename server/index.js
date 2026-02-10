@@ -15,9 +15,8 @@ const io = socketIO(server, {
 
 app.use(cors());
 
-// ═══════════════════════════════════════════════════════════
-// GLOBAL DATA STORES (OUTSIDE CONNECTION HANDLER!)
-// ═══════════════════════════════════════════════════════════
+
+// GLOBAL DATA STORES 
 
 // Store room data for Level 2
 const rooms = {};
@@ -28,9 +27,8 @@ const globalUsers = [];
 // Store user game data for Level 5 (gold and inventory per socket)
 const userGameData = {};
 
-// ═══════════════════════════════════════════════════════════
-// CONNECTION HANDLER
-// ═══════════════════════════════════════════════════════════
+
+// Level 1 :Connection
 
 io.on('connection', (socket) => {
   console.log('🎉 User connected:', socket.id);
@@ -51,7 +49,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // LEVEL 2: Rooms
+  // Level 2: Rooms
   socket.on('join-room', ({ roomName, playerName }) => {
     socket.join(roomName);
     socket.roomName = roomName;
@@ -115,7 +113,7 @@ io.on('connection', (socket) => {
   });
 
 
-  // LEVEL 3: Global Server Chat
+  // Level 3: Global Server Chat
   
   socket.on('register-user', (data) => {
     socket.userName = data.userName;
@@ -164,7 +162,7 @@ io.on('connection', (socket) => {
   });
 
  
-  // LEVEL 5: ACKNOWLEDGEMENTS
+  // Level 5: ACKNOWLEDGEMENTS
 
   socket.on('buy-item', (data, acknowledgement) => {
     const userData = userGameData[socket.id];
@@ -201,7 +199,7 @@ io.on('connection', (socket) => {
   });
 
   
-  // DISCONNECT HANDLER
+  //Level 6: Error handling
  
   socket.on('disconnect', () => {
     console.log('😢 User disconnected:', socket.id);
@@ -237,7 +235,40 @@ io.on('connection', (socket) => {
       console.log(`🗑️ Cleaned up game data for ${socket.id}`);
     }
   });
+
+    // Level 7: Middleware (Authentication happens in middleware!)
+
+    socket.on('authenticate', (data) => {
+      const { username, password } = data;
+      
+      console.log(`🔐 Auth attempt: ${username}`);
+      
+      // Simple auth check
+      if (username === 'admin' && password === 'secret123') {
+        socket.username = username;
+        socket.emit('auth-success', { username });
+        console.log(`✅ Auth success: ${username}`);
+      } else {
+        socket.emit('auth-failed', { reason: 'Invalid credentials' });
+        console.log(`❌ Auth failed: ${username}`);
+      }
+    });
+
+    socket.on('secure-message', (data) => {
+      if (socket.username) {
+        console.log(`💬 Secure message from ${socket.username}: ${data.text}`);
+        socket.emit('secure-message', {
+          sender: 'Server',
+          text: `Echo: ${data.text}`,
+          timestamp: new Date().toLocaleTimeString()
+        });
+      }
+    });
 });
+
+
+
+
 
 const PORT = 4000;
 server.listen(PORT, () => {
