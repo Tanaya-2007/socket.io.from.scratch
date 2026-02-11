@@ -201,7 +201,7 @@ function LevelSelector({ isConnected, onSelectLevel, isTransitioning }) {
                 <div className="text-5xl md:text-6xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300">🎮</div>
                 <div className="mb-4 md:mb-6">
                   <div className="text-xs md:text-sm font-bold text-cyan-400 mb-1 md:mb-2">LEVEL 9</div>
-                  <h3 className="text-2xl md:text-4xl font-black mb-2 md:mb-3 text-white">Custom Events</h3>
+                  <h3 className="text-2xl md:text-4xl font-black mb-2 md:mb-3 text-white">Volatile Events and Binary Data</h3>
                   <p className="text-sm md:text-lg text-gray-400">Create YOUR own events with any name! Not limited to 'message' anymore.</p>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 text-cyan-400 font-bold text-sm md:text-base">
