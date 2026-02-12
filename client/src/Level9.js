@@ -111,15 +111,37 @@ function Level9({ socket, isConnected, onBack }) {
 
   const handleMouseMove = (e) => {
     if (!demoAreaRef.current || !isSimulating) return;
-    const rect = demoAreaRef.current.getBoundingClientRect();
+    
+    const canvas = demoAreaRef.current;
+    const rect = canvas.getBoundingClientRect();
     const x = Math.round(e.clientX - rect.left);
     const y = Math.round(e.clientY - rect.top);
+    
+    // Draw on canvas
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#3b82f6'; // Blue color
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    
+    if (myPosition.x !== 0 && myPosition.y !== 0) {
+      ctx.beginPath();
+      ctx.moveTo(myPosition.x, myPosition.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+    
     setMyPosition({ x, y });
-
-    // Volatile emit — can be dropped
-    socket.volatile.emit('cursor:move', { x, y });
+  
+    // Volatile emit
+    socket.volatile.emit('draw:move', { x, y });
     setSentCount(prev => prev + 1);
-    addVolatileLog(`volatile.emit → cursor:move {x:${x}, y:${y}}`, 'sent');
+    addVolatileLog(`volatile.emit → draw:move {x:${x}, y:${y}}`, 'sent');
+    
+    // Simulate drops
+    if (Math.random() < 0.25) {
+      setDroppedCount(prev => prev + 1);
+      addVolatileLog(`⚡ DROPPED — socket busy (drawing still smooth!)`, 'dropped');
+    }
   };
 
   const startSimulation = () => {
@@ -724,100 +746,95 @@ socket.on('file:upload', ({ name, data }) => {
           <div className="container mx-auto max-w-5xl">
 
             {/* ── VOLATILE TAB ── */}
-            {/* ── VOLATILE TAB ── REAL-TIME CHAT ── */}
-{activeTab === 'volatile' && (
+            {activeTab === 'volatile' && (
   <div>
-    <h2 className="text-2xl sm:text-3xl font-black text-blue-400 mb-2 text-center">💬 Real-Time Chat with Typing Indicators</h2>
-    <p className="text-gray-400 text-center mb-6 text-sm sm:text-base">Type to see volatile events in action - typing indicators can be dropped!</p>
+    <h2 className="text-2xl sm:text-3xl font-black text-blue-400 mb-2 text-center">🎨 Live Drawing Canvas</h2>
+    <p className="text-gray-400 text-center mb-6 text-sm sm:text-base">Draw with your mouse - see volatile events fire and drop in real-time!</p>
 
-    {/* Chat Messages */}
-    <div className="bg-black/60 rounded-2xl border-2 border-blue-500/30 h-64 overflow-y-auto p-4 mb-4">
-      {messages.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-gray-500">
-          <div>
-            <div className="text-5xl mb-3 text-center">💬</div>
-            <p className="text-lg font-bold">Start typing to send messages!</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {messages.map(msg => (
-            <div key={msg.id} className={msg.sender === 'You' ? 'text-right' : ''}>
-              <div className={`inline-block max-w-[80%] p-3 rounded-xl ${
-                msg.sender === 'You'
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                  : 'bg-black/80 border border-blue-500/30 text-gray-200'
-              }`}>
-                <div className="text-xs opacity-80 mb-1">{msg.sender} • {msg.time}</div>
-                <div>{msg.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    {/* Canvas Drawing Area */}
+    <div className="bg-black/60 rounded-2xl border-2 border-blue-500/30 mb-4 overflow-hidden">
+      <canvas
+        ref={demoAreaRef}
+        onMouseDown={() => setIsSimulating(true)}
+        onMouseUp={() => setIsSimulating(false)}
+        onMouseLeave={() => setIsSimulating(false)}
+        onMouseMove={handleMouseMove}
+        width={800}
+        height={400}
+        className="w-full h-64 sm:h-96 cursor-crosshair"
+        style={{ touchAction: 'none' }}
+      />
     </div>
 
-    {/* Typing Indicators */}
-    {isTyping && (
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-          </div>
-          <span className="text-sm text-yellow-400">Someone is typing...</span>
-          <span className="text-xs text-gray-500">(volatile event - can be dropped!)</span>
-        </div>
-      </div>
-    )}
-
-    {/* Message Input */}
-    <div className="flex gap-3">
-      <input
-        type="text"
-        value={chatMessage}
-        onChange={handleChatTyping}
-        onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
-        placeholder="Type a message... (volatile typing indicator fires!)"
-        className="flex-1 px-4 py-3 bg-black/90 border-2 border-blue-500/30 rounded-xl focus:border-blue-500 focus:outline-none text-white"
-      />
+    {/* Controls */}
+    <div className="grid grid-cols-2 gap-3 mb-4">
       <button
-        onClick={handleSendChatMessage}
-        disabled={!chatMessage.trim()}
-        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl disabled:opacity-50 transition-all"
+        onClick={() => {
+          const canvas = demoAreaRef.current;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          setVolatileLog([]);
+          setSentCount(0);
+          setDroppedCount(0);
+        }}
+        className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all"
       >
-        Send
+        🗑️ Clear Canvas
+      </button>
+      <button
+        onClick={() => setHasCompletedDemo(true)}
+        className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all"
+      >
+        ✅ Mark Complete
       </button>
     </div>
 
     {/* Stats */}
-    <div className="grid grid-cols-2 gap-3 mt-4">
+    <div className="grid grid-cols-3 gap-3 mb-4">
       <div className="bg-black/60 border border-blue-500/30 rounded-xl p-4">
         <div className="text-2xl font-black text-blue-400">{sentCount}</div>
-        <div className="text-xs text-gray-400">Typing events sent (volatile)</div>
+        <div className="text-xs text-gray-400">Position events sent</div>
       </div>
       <div className="bg-black/60 border border-red-500/30 rounded-xl p-4">
         <div className="text-2xl font-black text-red-400">{droppedCount}</div>
-        <div className="text-xs text-gray-400">Events dropped (that's OK!)</div>
+        <div className="text-xs text-gray-400">Events dropped</div>
+      </div>
+      <div className="bg-black/60 border border-green-500/30 rounded-xl p-4">
+        <div className="text-2xl font-black text-green-400">{sentCount - droppedCount}</div>
+        <div className="text-xs text-gray-400">Successfully sent</div>
+      </div>
+    </div>
+
+    {/* Instructions */}
+    <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-4">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">💡</div>
+        <div>
+          <h4 className="font-bold text-blue-400 mb-2">How it works:</h4>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>• <strong>Click & Drag</strong> to draw on the canvas</li>
+            <li>• Each mouse move fires a <code className="bg-black/50 px-1 rounded">volatile.emit()</code></li>
+            <li>• Some events get <span className="text-red-400">dropped</span> (that's OK! - smooth drawing still works)</li>
+            <li>• Perfect demo of when volatile events are useful!</li>
+          </ul>
+        </div>
       </div>
     </div>
 
     {/* Event Log */}
-    <div className="mt-4 rounded-2xl overflow-hidden border border-blue-500/30">
+    <div className="rounded-2xl overflow-hidden border border-blue-500/30">
       <div className="bg-[#0d1829] px-4 py-2.5 border-b border-blue-500/20">
         <span className="text-xs font-black text-blue-400">📡 VOLATILE EVENTS LOG</span>
       </div>
       <div className="bg-[#040c16] h-32 overflow-y-auto p-3 space-y-1.5">
         {volatileLog.length === 0 ? (
           <div className="h-full flex items-center justify-center text-gray-600 text-xs">
-            Start typing to see volatile events...
+            Start drawing to see volatile events...
           </div>
-        ) : volatileLog.map(log => (
+        ) : volatileLog.slice(-10).map(log => (
           <div key={log.id} className={`px-3 py-1.5 rounded-lg text-xs font-mono border-l-2 ${
             log.type === 'dropped' ? 'border-red-500 text-red-400 bg-red-500/5' :
-            log.type === 'sent' ? 'border-blue-500 text-blue-300 bg-blue-500/5' :
-            'border-yellow-500 text-yellow-300 bg-yellow-500/5'
+            'border-blue-500 text-blue-300 bg-blue-500/5'
           }`}>
             <span className="text-gray-600">{log.time}</span> | {log.msg}
           </div>
@@ -826,7 +843,6 @@ socket.on('file:upload', ({ name, data }) => {
     </div>
   </div>
 )}
-
             {/* ── BINARY TAB ── */}
             {activeTab === 'binary' && (
               <div>
@@ -931,8 +947,7 @@ socket.on('file:upload', ({ name, data }) => {
                         <div className="w-3 h-3 rounded-full bg-yellow-500/90"></div>
                         <div className="w-3 h-3 rounded-full bg-green-500/90"></div>
                       </div>
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
-                      <span className="text-xs font-black text-blue-400 tracking-wider">📡 BINARY EVENTS LOG</span>
+                        <span className="text-xs font-black text-blue-400 tracking-wider">📡 Binary Events Log</span>
                     </div>
                   </div>
                   <div
