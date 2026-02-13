@@ -11,6 +11,7 @@ import Level7 from './Level7';
 import Level8 from './Level8';
 import Level9 from './Level9';
 import Level10 from './Level10';
+import Level11 from './Level11';
 
 const socket = io('http://localhost:4000');
 
@@ -137,6 +138,15 @@ function App() {
 
       {currentLevel === 10 && (
                             <Level10
+                              socket={socket} 
+                              isConnected={isConnected} 
+                              onBack={() => setCurrentLevel(null)}
+                              isTransitioning={false}
+                            />
+        )}
+
+      {currentLevel === 11 && (
+                            <Level11
                               socket={socket} 
                               isConnected={isConnected} 
                               onBack={() => setCurrentLevel(null)}
