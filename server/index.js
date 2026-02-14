@@ -345,11 +345,37 @@ io.on('connection', (socket) => {
 
         socket.emit('race:finished', { wpm, accuracy });
       });
+
+      //Level 11
+      const rateLimits = new Map();
+
+socket.on('send-message', (data) => {
+  const now = Date.now();
+  
+  if (!rateLimits.has(socket.id)) {
+    rateLimits.set(socket.id, []);
+  }
+  
+  const requests = rateLimits.get(socket.id);
+  const recent = requests.filter(time => now - time < 10000);
+  
+  if (recent.length >= 5) {
+    socket.emit('rate-limit-exceeded', { retryAfter: 10000 });
+    return;
+  }
+  
+  recent.push(now);
+  rateLimits.set(socket.id, recent);
+  
+  if (recent.length >= 4) {
+    socket.emit('rate-limit-warning', { remaining: 5 - recent.length });
+  }
+  
+  socket.emit('message-sent', { message: data.message });
 });
 
-
-
-
+socket.on('disconnect', () => rateLimits.delete(socket.id));
+});
 
 const PORT = 4000;
 server.listen(PORT, () => {
