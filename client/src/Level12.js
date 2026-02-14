@@ -335,19 +335,6 @@ function Level12({ socket, isConnected, onBack, isTransitioning }) {
 
           <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-6xl">
             
-            {/* Hero */}
-            <div className="text-center mb-12 md:mb-16">
-              <div className="text-6xl md:text-8xl mb-6">🚀</div>
-              <h2 className="text-4xl md:text-6xl font-black mb-4">
-                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 bg-clip-text text-transparent">
-                  REDIS ADAPTER
-                </span>
-              </h2>
-              <p className="text-lg md:text-2xl text-gray-300 max-w-3xl mx-auto">
-                Scale Socket.IO across multiple servers - Production-ready horizontal scaling!
-              </p>
-            </div>
-
             {/* The Problem */}
             <div className="mb-12 md:mb-16 bg-black/60 border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
               <h3 className="text-2xl md:text-3xl font-black mb-6 text-cyan-400 flex items-center gap-2 md:gap-3">
@@ -476,7 +463,7 @@ User A sends message
               <div className="p-4 md:p-8">
                 <div className="bg-black rounded-xl border border-cyan-500/30 overflow-hidden">
                   <div className="px-4 py-2 bg-black/80 border-b border-cyan-500/30 flex gap-2">
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-cyan-500"></div>
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500"></div>
                   </div>

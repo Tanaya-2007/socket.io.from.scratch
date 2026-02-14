@@ -16,11 +16,15 @@ This is a hands-on learning journey for Socket.IO, built step-by-step.
 - **06-Error Handling** - Handle disconnections and auto-reconnect gracefully
 - **07-Middleware** - Run code before accepting or rejecting connections 
 - **08-Custom Events Handling** - Create your own events with any name 
-- **08-Volatile Events and Binary Data** 
+- **09-Volatile Events and Binary Data** 
+- **10-Database Integration** 
+- **11-Rate Limiting and Security** - Prevent abuse, spam and DDoS attacks
+- **12-Redis Adapter and Scaling** - Used for scaling
+
 
 ## 🛠️ Tech Stack
 
-- Node.js + Express
+- Node.js + Express + MongoDB 
 - Socket.IO
 
 
