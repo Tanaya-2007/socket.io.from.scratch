@@ -15,6 +15,7 @@ function Level12({ socket, isConnected, onBack, isTransitioning }) {
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [serverInfo, setServerInfo] = useState({ serverId: 'Server 1', totalServers: 1 });
   const [logs, setLogs] = useState([]);
+  const [simulatedServerMessages, setSimulatedServerMessages] = useState(0);
 
   const quiz = [
     {
@@ -570,11 +571,20 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
                 <h1 className="text-lg md:text-2xl font-black text-cyan-400">MULTI-SERVER CHAT</h1>
               </div>
               
+              <div className="flex items-center gap-2">
               <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
                 isConnected ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
               }`}>
                 {isConnected ? '✅ ONLINE' : '❌ OFFLINE'}
               </div>
+              
+              <div className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 bg-cyan-500/20 border-cyan-500 text-cyan-400">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+                  <span>REDIS</span>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
         </header>
@@ -583,17 +593,24 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
           <div className="container mx-auto max-w-4xl">
 
             {/* Server Info */}
-            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6">
-              <div className="bg-black/60 border border-cyan-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-cyan-400">{serverInfo.serverId}</div>
-                <div className="text-xs text-gray-400">Connected Server</div>
-              </div>
-              
-              <div className="bg-black/60 border border-blue-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-blue-400">{onlineUsers}</div>
-                <div className="text-xs text-gray-400">Users Online</div>
-              </div>
+        <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+          <div className="bg-black/60 border border-cyan-500/30 rounded-xl p-4">
+            <div className="text-2xl md:text-3xl font-black text-cyan-400">{serverInfo.serverId}</div>
+            <div className="text-xs text-gray-400">Connected Server</div>
+          </div>
+          
+          <div className="bg-black/60 border border-blue-500/30 rounded-xl p-4">
+            <div className="text-2xl md:text-3xl font-black text-blue-400">{onlineUsers}</div>
+            <div className="text-xs text-gray-400">Users Online</div>
+          </div>
+          
+          <div className="bg-black/60 border border-green-500/30 rounded-xl p-4">
+            <div className="text-2xl md:text-3xl font-black text-green-400 flex items-center justify-center">
+              <span className="animate-pulse">✓</span>
             </div>
+            <div className="text-xs text-gray-400">Redis Active</div>
+          </div>
+        </div>
 
             {/* Info Banner */}
             <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 mb-6">
@@ -605,6 +622,85 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
                 </div>
               </div>
             </div>
+
+            {/* Redis Sync Visualization */}
+            <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-cyan-500/10 border-2 border-cyan-500/30 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-black text-cyan-400 flex items-center gap-2">
+                  <span className="text-lg">🌐</span> Redis Pub/Sub Active
+                </h4>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-xs text-green-400 font-bold">SYNCING</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-black/50 rounded-lg p-2 border border-cyan-500/30">
+                <div className="text-xs text-gray-400">Your Server</div>
+                <div className="text-cyan-400 text-lg font-black animate-pulse">●</div>
+                <div className="text-xs text-cyan-400 font-bold mt-1">Server-1</div>
+              </div>
+              <div className="bg-black/50 rounded-lg p-2 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-cyan-400 animate-pulse text-sm">⟷</div>
+                  <div className="text-xs text-cyan-400 font-bold">Redis</div>
+                  <div className="text-cyan-400 animate-pulse text-sm">⟷</div>
+                </div>
+              </div>
+              <div className="bg-black/50 rounded-lg p-2 border border-purple-500/30">
+                <div className="text-xs text-gray-400">Other Servers</div>
+                <div className="text-purple-400 text-lg font-black">●</div>
+                <div className="text-xs text-purple-400 font-bold mt-1">Server-2+</div>
+              </div>
+            </div>
+              
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                All messages sync across servers in real-time via Redis
+              </p>
+            </div>
+
+            {/* Simulate Multi-Server Button */}
+          <div className="bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border-2 border-cyan-500/30 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="text-sm font-black text-cyan-400 flex items-center gap-2">
+                  <span className="text-lg">🎮</span> Test Multi-Server
+                </h4>
+                <p className="text-xs text-gray-400 mt-1">Simulate a message from Server 2 via Redis</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                // Simulate a message from "Server 2"
+                const simulatedMsg = {
+                  username: 'User_Server2',
+                  text: `Hello from Server 2! (via Redis) #${simulatedServerMessages + 1}`,
+                  timestamp: new Date().toISOString(),
+                  fromServer: 'Server-2'
+                };
+                
+                setMessages(prev => [...prev, simulatedMsg]);
+                setSimulatedServerMessages(prev => prev + 1);
+                addLog(`🌐 Redis synced message from Server-2!`, 'info');
+                
+                // Visual feedback
+                setTimeout(() => {
+                  addLog(`✅ Message delivered across servers via Redis pub/sub`, 'success');
+                }, 300);
+              }}
+              disabled={!isJoined}
+              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-600 hover:from-cyan-500 hover:to-cyan-500 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-100 flex items-center justify-center gap-2"
+            >
+              <span>🌐</span>
+              <span>Simulate Server 2 Message</span>
+            </button>
+            
+            <div className="mt-3 text-xs text-center text-gray-400">
+              Messages simulated: <span className="text-purple-400 font-bold">{simulatedServerMessages}</span>
+            </div>
+          </div>
 
             {/* Join or Chat */}
             {!isJoined ? (
@@ -640,28 +736,37 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
                     <h3 className="font-black text-cyan-400">💬 Chat Messages</h3>
                   </div>
                   
-                  <div className="p-4 h-64 overflow-y-auto space-y-2">
-                    {messages.length === 0 ? (
-                      <div className="h-full flex items-center justify-center text-gray-500">
-                        <div>
-                          <div className="text-4xl mb-2 text-center">💬</div>
-                          <p className="text-sm">No messages yet...</p>
-                        </div>
-                      </div>
-                    ) : (
-                      messages.map((msg, i) => (
-                        <div key={i} className={`px-3 py-2 rounded-lg ${
-                          msg.own ? 'bg-cyan-500/20 border-l-4 border-cyan-500' : 'bg-gray-500/10 border-l-4 border-gray-500'
-                        }`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-cyan-400">{msg.username}</span>
-                            <span className="text-xs text-gray-500">{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                          </div>
-                          <p className="text-sm text-white">{msg.text}</p>
-                        </div>
-                      ))
-                    )}
+            <div className="p-4 h-64 overflow-y-auto space-y-2">
+              {messages.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <div>
+                    <div className="text-4xl mb-2 text-center">💬</div>
+                    <p className="text-sm">No messages yet...</p>
                   </div>
+                </div>
+              ) : (
+                messages.map((msg, i) => (
+                  <div key={i} className={`px-3 py-2 rounded-lg ${
+                    msg.own ? 'bg-cyan-500/20 border-l-4 border-cyan-500' : 
+                    msg.fromServer === 'Server-2' ? 'bg-purple-500/10 border-l-4 border-purple-500' :
+                    'bg-gray-500/10 border-l-4 border-gray-500'
+                  } ${!msg.own ? 'animate-fadeIn' : ''}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-cyan-400">{msg.username}</span>
+                        {msg.fromServer === 'Server-2' && (
+                          <span className="text-xs bg-purple-500/20 border border-purple-500/50 text-purple-400 px-2 py-0.5 rounded-full">
+                            Server-2
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-sm text-white">{msg.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
                 </div>
 
                 {/* Input */}
@@ -733,6 +838,21 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
           </div>
         )}
       </div>
+      <style jsx>{`
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+      }
+    `}</style>
     </div>
   );
 }

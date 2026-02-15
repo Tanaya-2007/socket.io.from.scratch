@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const cors = require('cors');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { createClient } = require('redis');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +29,22 @@ const globalUsers = [];
 // Store user game data for Level 5 (gold and inventory per socket)
 const userGameData = {};
 
+//Redis Adapter Setup
+const pubClient = createClient({ url: 'redis://localhost:6379' });
+const subClient = pubClient.duplicate();
+
+Promise.all([pubClient.connect(), subClient.connect()])
+  .then(() => {
+    console.log('✅ Redis connected successfully!');
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('🌐 Redis Adapter enabled!');
+  })
+  .catch((err) => {
+    console.error('❌ Redis connection failed:', err);
+  });
+
+pubClient.on('error', (err) => console.error('❌ Redis Pub Error:', err));
+subClient.on('error', (err) => console.error('❌ Redis Sub Error:', err));
 
 // Level 1 :Connection
 
@@ -349,7 +367,7 @@ io.on('connection', (socket) => {
       //Level 11
       const rateLimits = new Map();
 
-socket.on('send-message', (data) => {
+  socket.on('send-message', (data) => {
   const now = Date.now();
   
   if (!rateLimits.has(socket.id)) {
@@ -375,6 +393,57 @@ socket.on('send-message', (data) => {
 });
 
 socket.on('disconnect', () => rateLimits.delete(socket.id));
+
+  // LEVEL 12: REDIS ADAPTER ← ADD THIS HERE!
+  // ═══════════════════════════════════════════════════════════
+
+  const onlineUsers = new Set();
+
+  socket.on('chat:join', (data) => {
+    socket.username = data.username;
+    onlineUsers.add(data.username);
+    
+    console.log(`💬 ${data.username} joined chat`);
+    
+    socket.emit('server:info', {
+      serverId: process.env.SERVER_ID || 'Server-1',
+      totalServers: 1
+    });
+    
+    io.emit('user:joined', {
+      username: data.username,
+      onlineUsers: onlineUsers.size
+    });
+  });
+
+  socket.on('chat:send', (data) => {
+    console.log(`📨 ${data.username}: ${data.text}`);
+    socket.broadcast.emit('chat:message', data);
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.username) {
+      onlineUsers.delete(socket.username);
+      
+      io.emit('user:left', {
+        username: socket.username,
+        onlineUsers: onlineUsers.size
+      });
+      
+      console.log(`👋 ${socket.username} left`);
+    }
+  });
+});
+
+//Graceful Shutdown
+process.on('SIGTERM', async () => {
+  console.log('🛑 Shutting down gracefully...');
+  await pubClient.quit();
+  await subClient.quit();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
 
 const PORT = 4000;
