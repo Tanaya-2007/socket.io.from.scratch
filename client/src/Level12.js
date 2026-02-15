@@ -662,12 +662,12 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
 
             {/* Multi-Server Instructions */}
             <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 rounded-xl p-4 mb-6">
-              <div className="mb-3">
+              {/* <div className="mb-3">
                 <h4 className="text-sm font-black text-purple-400 flex items-center gap-2 mb-2">
                   <span className="text-lg">🎮</span> Test Real Multi-Server Setup
                 </h4>
                 <p className="text-xs text-gray-400">To see Redis working across REAL servers:</p>
-              </div>
+              </div> */}
               
               <div className="bg-black/50 rounded-lg p-4 mb-3">
                 <div className="space-y-2 text-xs text-gray-300">

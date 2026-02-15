@@ -24,7 +24,7 @@ This is a hands-on learning journey for Socket.IO, built step-by-step.
 
 ## 🛠️ Tech Stack
 
-- Node.js + Express + MongoDB 
+- Node.js + Express + MongoDB + Redis 
 - Socket.IO
 
 
