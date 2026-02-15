@@ -446,11 +446,15 @@ process.on('SIGTERM', async () => {
   });
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
+const SERVER_ID = process.env.SERVER_ID || 'Server-1';
+
 server.listen(PORT, () => {
   console.log(`
- 🚀 Socket.IO Server Running!                             
-  📍 http://localhost:${PORT}                                
-
+  🚀 Socket.IO Server Running!                 
+  📡 Server ID: ${SERVER_ID.padEnd(30)} 
+  📍 Port: ${String(PORT).padEnd(35)} 
+  🌐 http://localhost:${PORT.toString().padEnd(25)} 
+  ${pubClient.isReady ? '✅ Redis: CONNECTED' : '❌ Redis: DISCONNECTED'.padEnd(43)}
   `);
 });

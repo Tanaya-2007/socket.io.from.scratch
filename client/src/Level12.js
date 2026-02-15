@@ -660,47 +660,74 @@ Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
               </p>
             </div>
 
-            {/* Simulate Multi-Server Button */}
-          <div className="bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border-2 border-cyan-500/30 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h4 className="text-sm font-black text-cyan-400 flex items-center gap-2">
-                  <span className="text-lg">🎮</span> Test Multi-Server
+            {/* Multi-Server Instructions */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 rounded-xl p-4 mb-6">
+              <div className="mb-3">
+                <h4 className="text-sm font-black text-purple-400 flex items-center gap-2 mb-2">
+                  <span className="text-lg">🎮</span> Test Real Multi-Server Setup
                 </h4>
-                <p className="text-xs text-gray-400 mt-1">Simulate a message from Server 2 via Redis</p>
+                <p className="text-xs text-gray-400">To see Redis working across REAL servers:</p>
+              </div>
+              
+              <div className="bg-black/50 rounded-lg p-4 mb-3">
+                <div className="space-y-2 text-xs text-gray-300">
+                  <p className="flex items-start gap-2">
+                    <span className="text-purple-400 font-bold">1.</span>
+                    <span>Open a second terminal</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-purple-400 font-bold">2.</span>
+                    <span>Run: <code className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">PORT=4001 SERVER_ID="Server-2" node index.js</code></span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-purple-400 font-bold">3.</span>
+                    <span>Open this app in 2 browser tabs</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-purple-400 font-bold">4.</span>
+                    <span>Both tabs connect to <code className="bg-cyan-500/20 px-2 py-0.5 rounded text-cyan-300">localhost:3000</code></span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-purple-400 font-bold">5.</span>
+                    <span>Messages between tabs sync via Redis! 🌐</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
+                <p className="text-xs text-yellow-300">
+                  <strong>⚡ Quick Demo:</strong> For now, click below to simulate Server-2 messages and see how they'd appear!
+                </p>
+              </div>
+              
+              <button
+                onClick={() => {
+                  const simulatedMsg = {
+                    username: 'User_Server2',
+                    text: `Hello from Server 2! (via Redis) #${simulatedServerMessages + 1}`,
+                    timestamp: new Date().toISOString(),
+                    fromServer: 'Server-2'
+                  };
+                  
+                  setMessages(prev => [...prev, simulatedMsg]);
+                  setSimulatedServerMessages(prev => prev + 1);
+                  addLog(`🌐 Redis synced message from Server-2!`, 'info');
+                  
+                  setTimeout(() => {
+                    addLog(`✅ Message delivered across servers via Redis pub/sub`, 'success');
+                  }, 300);
+                }}
+                disabled={!isJoined}
+                className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+              >
+                <span>🎮</span>
+                <span>Simulate Server-2 Message (Demo)</span>
+              </button>
+              
+              <div className="mt-3 text-xs text-center text-gray-400">
+                Simulated messages: <span className="text-purple-400 font-bold">{simulatedServerMessages}</span>
               </div>
             </div>
-            
-            <button
-              onClick={() => {
-                // Simulate a message from "Server 2"
-                const simulatedMsg = {
-                  username: 'User_Server2',
-                  text: `Hello from Server 2! (via Redis) #${simulatedServerMessages + 1}`,
-                  timestamp: new Date().toISOString(),
-                  fromServer: 'Server-2'
-                };
-                
-                setMessages(prev => [...prev, simulatedMsg]);
-                setSimulatedServerMessages(prev => prev + 1);
-                addLog(`🌐 Redis synced message from Server-2!`, 'info');
-                
-                // Visual feedback
-                setTimeout(() => {
-                  addLog(`✅ Message delivered across servers via Redis pub/sub`, 'success');
-                }, 300);
-              }}
-              disabled={!isJoined}
-              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-600 hover:from-cyan-500 hover:to-cyan-500 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-100 flex items-center justify-center gap-2"
-            >
-              <span>🌐</span>
-              <span>Simulate Server 2 Message</span>
-            </button>
-            
-            <div className="mt-3 text-xs text-center text-gray-400">
-              Messages simulated: <span className="text-purple-400 font-bold">{simulatedServerMessages}</span>
-            </div>
-          </div>
 
             {/* Join or Chat */}
             {!isJoined ? (
