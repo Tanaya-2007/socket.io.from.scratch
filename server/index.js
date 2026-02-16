@@ -4,6 +4,7 @@ const socketIO = require('socket.io');
 const cors = require('cors');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const { createClient } = require('redis');
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,6 +17,27 @@ const io = socketIO(server, {
 });
 
 app.use(cors());
+
+
+// MONGODB CONNECTION
+// ═══════════════════════════════════════════════════════════
+mongoose.connect('mongodb://localhost:27017/socketio-course', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB Connected!'))
+.catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// MESSAGE SCHEMA
+const messageSchema = new mongoose.Schema({
+  sender: { type: String, required: true },
+  text: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  seen: { type: Boolean, default: false },
+  seenAt: { type: Date }
+});
+
+const Message = mongoose.model('Message', messageSchema);
 
 
 // GLOBAL DATA STORES 
@@ -364,7 +386,101 @@ io.on('connection', (socket) => {
         socket.emit('race:finished', { wpm, accuracy });
       });
 
-      //Level 11
+  // LEVEL 10: DATABASE INTEGRATION (MongoDB + Persistent Chat)
+  // ═══════════════════════════════════════════════════════════
+
+  socket.on('chat:join', async (data) => {
+    try {
+      socket.chatUsername = data.username;
+      
+      console.log(`💾 ${data.username} joined persistent chat - loading history...`);
+      
+      // Load last 50 messages from database
+      const history = await Message.find()
+        .sort({ timestamp: -1 })
+        .limit(50)
+        .lean();
+      
+      // Send history in correct order (oldest first)
+      socket.emit('chat:history', history.reverse().map(msg => ({
+        id: msg._id.toString(),
+        sender: msg.sender,
+        text: msg.text,
+        timestamp: msg.timestamp.toISOString(),
+        seen: msg.seen,
+        seenAt: msg.seenAt ? msg.seenAt.toISOString() : null
+      })));
+      
+      console.log(`📂 Sent ${history.length} messages from DB to ${data.username}`);
+    } catch (error) {
+      console.error('❌ Error loading chat history:', error);
+      socket.emit('chat:error', { message: 'Failed to load chat history' });
+    }
+  });
+
+  socket.on('chat:send', async (message) => {
+    try {
+      console.log(`💬 ${message.sender}: "${message.text}" (saving to DB...)`);
+      
+      // Save message to MongoDB
+      const newMessage = new Message({
+        sender: message.sender,
+        text: message.text,
+        timestamp: new Date(message.timestamp),
+        seen: false
+      });
+      
+      await newMessage.save();
+      
+      console.log(`✅ Message saved to DB with ID: ${newMessage._id}`);
+      
+      // Broadcast to all OTHER clients (sender already has it)
+      socket.broadcast.emit('chat:message', {
+        id: newMessage._id.toString(),
+        sender: newMessage.sender,
+        text: newMessage.text,
+        timestamp: newMessage.timestamp.toISOString(),
+        seen: false
+      });
+      
+    } catch (error) {
+      console.error('❌ Error saving message:', error);
+      socket.emit('chat:error', { message: 'Failed to save message' });
+    }
+  });
+
+  socket.on('message:markSeen', async (data) => {
+    try {
+      const messageId = data.messageId;
+      
+      console.log(`✓✓ Marking message ${messageId} as seen...`);
+      
+      // Update message in database
+      const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        { 
+          seen: true, 
+          seenAt: new Date() 
+        },
+        { new: true }
+      );
+      
+      if (updatedMessage) {
+        console.log(`✅ Message ${messageId} marked as seen`);
+        
+        // Broadcast to all clients
+        io.emit('message:seen', {
+          messageId: messageId,
+          seenAt: updatedMessage.seenAt.toISOString()
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error marking message as seen:', error);
+    }
+  });
+
+      //Level 11: Rate Limiting & Security
       const rateLimits = new Map();
 
   socket.on('send-message', (data) => {
@@ -394,7 +510,7 @@ io.on('connection', (socket) => {
 
 socket.on('disconnect', () => rateLimits.delete(socket.id));
 
-  // LEVEL 12: REDIS ADAPTER ← ADD THIS HERE!
+  // LEVEL 12: REDIS ADAPTER - Multi-Server Chat
   // ═══════════════════════════════════════════════════════════
 
   const onlineUsers = new Set();
@@ -403,7 +519,7 @@ socket.on('disconnect', () => rateLimits.delete(socket.id));
     socket.username = data.username;
     onlineUsers.add(data.username);
     
-    console.log(`💬 ${data.username} joined chat`);
+    console.log(`💬 ${data.username} joined chat (via ${process.env.SERVER_ID || 'Server-1'})`);
     
     socket.emit('server:info', {
       serverId: process.env.SERVER_ID || 'Server-1',
@@ -417,7 +533,7 @@ socket.on('disconnect', () => rateLimits.delete(socket.id));
   });
 
   socket.on('chat:send', (data) => {
-    console.log(`📨 ${data.username}: ${data.text}`);
+    console.log(`📨 [${process.env.SERVER_ID || 'Server-1'}] ${data.username}: ${data.text}`);
     socket.broadcast.emit('chat:message', data);
   });
 
@@ -430,7 +546,7 @@ socket.on('disconnect', () => rateLimits.delete(socket.id));
         onlineUsers: onlineUsers.size
       });
       
-      console.log(`👋 ${socket.username} left`);
+      console.log(`👋 ${socket.username} left (from ${process.env.SERVER_ID || 'Server-1'})`);
     }
   });
 });
@@ -440,6 +556,7 @@ process.on('SIGTERM', async () => {
   console.log('🛑 Shutting down gracefully...');
   await pubClient.quit();
   await subClient.quit();
+  await mongoose.connection.close();
   server.close(() => {
     console.log('✅ Server closed');
     process.exit(0);
@@ -451,10 +568,19 @@ const SERVER_ID = process.env.SERVER_ID || 'Server-1';
 
 server.listen(PORT, () => {
   console.log(`
-  🚀 Socket.IO Server Running!                 
-  📡 Server ID: ${SERVER_ID.padEnd(30)} 
-  📍 Port: ${String(PORT).padEnd(35)} 
-  🌐 http://localhost:${PORT.toString().padEnd(25)} 
-  ${pubClient.isReady ? '✅ Redis: CONNECTED' : '❌ Redis: DISCONNECTED'.padEnd(43)}
+╔═══════════════════════════════════════════════════════╗
+║        🚀 SOCKET.IO SERVER RUNNING                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📡 Server ID: ${SERVER_ID.padEnd(37)}║
+║  📍 Port:      ${String(PORT).padEnd(37)}║
+║  🌐 URL:       http://localhost:${PORT.toString().padEnd(24)}║
+║  ${mongoose.connection.readyState === 1 ? '✅ MongoDB:   CONNECTED                          ' : '❌ MongoDB:   DISCONNECTED                       '}║
+║  ${pubClient.isReady ? '✅ Redis:     CONNECTED                          ' : '❌ Redis:     DISCONNECTED                       '}║
+╚═══════════════════════════════════════════════════════╝
+
+💡 TIP: To run multiple servers for Redis Adapter testing:
+   Terminal 1: npm start
+   Terminal 2: PORT=4001 SERVER_ID="Server-2" node index.js
+   Terminal 3: PORT=4002 SERVER_ID="Server-3" node index.js
   `);
 });
