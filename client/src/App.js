@@ -20,10 +20,43 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [completedLevels, setCompletedLevels] = useState([]);
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const savedLevel = localStorage.getItem('currentLevel');
+    const savedCompleted = localStorage.getItem('completedLevels');
+    
+    if (savedLevel) {
+      setCurrentLevel(parseInt(savedLevel));
+    }
+    
+    if (savedCompleted) {
+      setCompletedLevels(JSON.parse(savedCompleted));
+    }
+  }, []);
+
+  // Save progress whenever it changes
+  useEffect(() => {
+    if (currentLevel !== null) {
+      localStorage.setItem('currentLevel', currentLevel.toString());
+    }
+  }, [currentLevel]);
 
   useEffect(() => {
-    socket.on('connect', () => setIsConnected(true));
-    socket.on('disconnect', () => setIsConnected(false));
+    localStorage.setItem('completedLevels', JSON.stringify(completedLevels));
+  }, [completedLevels]);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      setIsConnected(true);
+      console.log('✅ Connected to server');
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+      console.log('❌ Disconnected from server');
+    });
 
     return () => {
       socket.off('connect');
@@ -47,123 +80,72 @@ function App() {
     smoothTransition(() => setCurrentLevel(null));
   };
 
+  const handleLevelComplete = (level) => {
+    if (!completedLevels.includes(level)) {
+      setCompletedLevels([...completedLevels, level]);
+    }
+  };
+
+  const handleResetProgress = () => {
+    if (window.confirm('⚠️ Reset all progress? This will unlock all levels and clear your progress.')) {
+      localStorage.removeItem('currentLevel');
+      localStorage.removeItem('completedLevels');
+      setCurrentLevel(null);
+      setCompletedLevels([]);
+    }
+  };
+
+  const renderLevel = () => {
+    const levelProps = {
+      socket,
+      isConnected,
+      onBack: goHome,
+      onComplete: () => handleLevelComplete(currentLevel),
+      isTransitioning
+    };
+
+    switch (currentLevel) {
+      case 1:
+        return <Level1 {...levelProps} />;
+      case 2:
+        return <Level2 {...levelProps} />;
+      case 3:
+        return <Level3 {...levelProps} />;
+      case 4:
+        return <Level4 {...levelProps} />;
+      case 5:
+        return <Level5 {...levelProps} />;
+      case 6:
+        return <Level6 {...levelProps} />;
+      case 7:
+        return <Level7 {...levelProps} />;
+      case 8:
+        return <Level8 {...levelProps} />;
+      case 9:
+        return <Level9 {...levelProps} />;
+      case 10:
+        return <Level10 {...levelProps} />;
+      case 11:
+        return <Level11 {...levelProps} />;
+      case 12:
+        return <Level12 {...levelProps} />;
+      default:
+        return (
+          <LevelSelector
+            onLevelSelect={goToLevel}
+            completedLevels={completedLevels}
+            onResetProgress={handleResetProgress}
+            isConnected={isConnected}
+            isTransitioning={isTransitioning}
+          />
+        );
+    }
+  };
+
   return (
-    <>
-      {!currentLevel && (
-        <LevelSelector 
-          isConnected={isConnected}
-          onSelectLevel={goToLevel}
-          isTransitioning={isTransitioning}
-        />
-      )}
-      
-      {currentLevel === 1 && (
-        <Level1 
-          socket={socket}
-          isConnected={isConnected}
-          onBack={goHome}
-          isTransitioning={isTransitioning}
-        />
-      )}
-      
-      {currentLevel === 2 && (
-        <Level2 
-          socket={socket}
-          isConnected={isConnected}
-          onBack={goHome}
-          isTransitioning={isTransitioning}
-        />
-      )}
-
-      {currentLevel === 3 && (
-        <Level3 
-          socket={socket}
-          isConnected={isConnected}
-          onBack={goHome}
-          isTransitioning={isTransitioning}
-        />
-      )}
-
-      {currentLevel === 4 && (
-        <Level4 
-          isConnected={isConnected}
-          onBack={goHome}
-          isTransitioning={isTransitioning}
-        />
-      )}
-
-      {currentLevel === 5 && (
-        <Level5 
-          socket={socket} 
-          isConnected={isConnected} 
-          onBack={() => setCurrentLevel(null)}
-          isTransitioning={false}
-        />
-      )}
-
-      {currentLevel === 6 && (
-              <Level6 
-                socket={socket} 
-                isConnected={isConnected} 
-                onBack={() => setCurrentLevel(null)}
-                isTransitioning={false}
-              />
-        )}
-
-      {currentLevel === 7 && (
-                      <Level7 
-                        socket={socket} 
-                        isConnected={isConnected} 
-                        onBack={() => setCurrentLevel(null)}
-                        isTransitioning={false}
-                      />
-        )}
-
-      {currentLevel === 8 && (
-                            <Level8 
-                              socket={socket} 
-                              isConnected={isConnected} 
-                              onBack={() => setCurrentLevel(null)}
-                              isTransitioning={false}
-                            />
-        )}
-
-      {currentLevel === 9 && (
-                            <Level9
-                              socket={socket} 
-                              isConnected={isConnected} 
-                              onBack={() => setCurrentLevel(null)}
-                              isTransitioning={false}
-                            />
-        )}
-
-      {currentLevel === 10 && (
-                            <Level10
-                              socket={socket} 
-                              isConnected={isConnected} 
-                              onBack={() => setCurrentLevel(null)}
-                              isTransitioning={false}
-                            />
-        )}
-
-      {currentLevel === 11 && (
-                            <Level11
-                              socket={socket} 
-                              isConnected={isConnected} 
-                              onBack={() => setCurrentLevel(null)}
-                              isTransitioning={false}
-                            />
-        )}
-
-      {currentLevel === 12 && (
-                            <Level12
-                              socket={socket} 
-                              isConnected={isConnected} 
-                              onBack={() => setCurrentLevel(null)}
-                              isTransitioning={false}
-                            />
-        )}
-    </>
+    <div className="App">
+      {renderLevel()}
+    </div>
   );
 }
 
