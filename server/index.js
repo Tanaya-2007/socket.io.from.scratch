@@ -18,13 +18,8 @@ const io = socketIO(server, {
 
 app.use(cors());
 
-
-// MONGODB CONNECTION
-// ═══════════════════════════════════════════════════════════
-mongoose.connect('mongodb://localhost:27017/socketio-course', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+//MongoDB connection
+mongoose.connect('mongodb://localhost:27017/socketio-course')
 .then(() => console.log('✅ MongoDB Connected!'))
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
