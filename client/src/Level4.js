@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-function Level4({ isConnected, onBack, isTransitioning }) {
+function Level4({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   const [phase, setPhase] = useState('theory');
   const [showJoinScreen, setShowJoinScreen] = useState(false);
   const [selectedNamespace, setSelectedNamespace] = useState(null);
@@ -361,8 +361,13 @@ if (showQuiz) {
                 </div>
 
                 <button
-                  onClick={onBack}
-                  className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xl font-black rounded-2xl transition-all transform hover:scale-105"
+                  onClick={() => {
+                    onComplete(); 
+                    setTimeout(() => {
+                      onBack();
+                    }, 500);
+                  }}
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
                 >
                   Back to Levels
                 </button>

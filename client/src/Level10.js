@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Level10({ socket, isConnected, onBack, isTransitioning }) {
+function Level10({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   const [phase, setPhase] = useState('theory');
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -275,11 +275,16 @@ function Level10({ socket, isConnected, onBack, isTransitioning }) {
                     </div>
 
                     <button
-                      onClick={onBack}
-                      className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
-                    >
-                      Back to Levels
-                    </button>
+                  onClick={() => {
+                    onComplete(); 
+                    setTimeout(() => {
+                      onBack();
+                    }, 500);
+                  }}
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                >
+                  Back to Levels
+                </button>
                   </div>
                 </div>
               )}
