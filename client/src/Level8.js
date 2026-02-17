@@ -1,163 +1,158 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
+function Level8({ socket, isConnected, onBack, onComplete, isTransitioning }){
   const [phase, setPhase] = useState('theory');
+  const [playerName, setPlayerName] = useState('');
+  const [isInGame, setIsInGame] = useState(false);
+  const [targetText, setTargetText] = useState('');
+  const [typedText, setTypedText] = useState('');
+  const [wpm, setWpm] = useState(0);
+  const [accuracy, setAccuracy] = useState(100);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [isRacing, setIsRacing] = useState(false);
+  const [gameLog, setGameLog] = useState([]);
+  const [finalScore, setFinalScore] = useState(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
-
-  // Demo state
-  const [message, setMessage] = useState('');
-  const [sendCount, setSendCount] = useState(0);
-  const [blockedUntil, setBlockedUntil] = useState(null);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [logs, setLogs] = useState([]);
-  const [requestsInWindow, setRequestsInWindow] = useState(0);
-  const [maxRequests] = useState(5); // 5 messages per 10 seconds
+  const logEndRef = useRef(null);
 
   const quiz = [
     {
-      question: "What is rate limiting?",
+      question: "What is a custom event in Socket.IO?",
       options: [
-        "Making your app slower",
-        "Limiting how many requests a user can make in a time window",
-        "Limiting server bandwidth",
-        "Blocking all users"
+        "A built-in Socket.IO event",
+        "An event YOU create with any name",
+        "Only 'message' events",
+        "Events that cost money"
       ],
       correct: 1
     },
     {
-      question: "Why is rate limiting important?",
+      question: "Can you send data with custom events?",
       options: [
-        "It makes the app look professional",
-        "Prevents spam, abuse, and DDoS attacks",
-        "It's required by law",
-        "It saves money on hosting"
-      ],
-      correct: 1
-    },
-    {
-      question: "What's a common rate limit strategy?",
-      options: [
-        "Block everyone permanently",
-        "Token bucket or sliding window (e.g., 10 requests per minute)",
-        "No limit - trust everyone",
-        "Only allow one request per day"
-      ],
-      correct: 1
-    },
-    {
-      question: "What should happen when rate limit is exceeded?",
-      options: [
-        "Delete user's account",
-        "Crash the server",
-        "Return error (429 Too Many Requests) and temporary block",
-        "Ignore it silently"
+        "No, only event names",
+        "Only strings",
+        "Yes! Objects, arrays, strings, numbers, etc.",
+        "Only numbers"
       ],
       correct: 2
     },
     {
-      question: "What else is important for Socket.IO security?",
+      question: "What's the syntax to emit a custom event?",
       options: [
-        "Validate ALL client input, sanitize data, use authentication",
-        "Trust all client data - it's faster",
-        "Allow anyone to emit any event",
-        "Don't use HTTPS"
+        "socket.send('eventName', data)",
+        "socket.emit('eventName', data)",
+        "socket.custom('eventName', data)",
+        "socket.trigger('eventName', data)"
       ],
-      correct: 0
+      correct: 1
+    },
+    {
+      question: "What's the syntax to listen for a custom event?",
+      options: [
+        "socket.listen('eventName', callback)",
+        "socket.receive('eventName', callback)",
+        "socket.on('eventName', callback)",
+        "socket.watch('eventName', callback)"
+      ],
+      correct: 2
+    },
+    {
+      question: "Why use custom events instead of just 'message'?",
+      options: [
+        "They're faster",
+        "Clear, organized code - different events for different actions",
+        "They use less bandwidth",
+        "Required by Socket.IO"
+      ],
+      correct: 1
     }
   ];
 
   useEffect(() => {
-    // Listen for rate limit responses
-    socket.on('rate-limit-warning', (data) => {
-      addLog(`⚠️ Warning: ${data.remaining} requests remaining`, 'warning');
+    socket.on('race:started', (data) => {
+      setIsInGame(true);
+      setTargetText(data.text);
+      setTimeLeft(data.duration);
+      setIsRacing(true);
+      setTypedText('');
+      setWpm(0);
+      setAccuracy(100);
+      setFinalScore(null);
+      addLog('🏁 Race started! Type the text as fast as you can!', 'success');
     });
 
-    socket.on('rate-limit-exceeded', (data) => {
-      setIsBlocked(true);
-      setBlockedUntil(Date.now() + data.retryAfter);
-      addLog(`🚫 BLOCKED! Too many requests. Try again in ${data.retryAfter / 1000}s`, 'error');
-      
-      // Auto unblock after timeout
-      setTimeout(() => {
-        setIsBlocked(false);
-        setBlockedUntil(null);
-        setSendCount(0);
-        setRequestsInWindow(0);
-        addLog('✅ Block lifted - you can send messages again', 'success');
-      }, data.retryAfter);
+    socket.on('race:update', (data) => {
+      setWpm(data.wpm);
+      setAccuracy(data.accuracy);
     });
 
-    socket.on('message-sent', (data) => {
-      addLog(`✓ Message sent: "${data.message}"`, 'success');
+    socket.on('race:finished', (data) => {
+      setIsRacing(false);
+      setFinalScore(data);
+      addLog(`🏆 Race finished! WPM: ${data.wpm} | Accuracy: ${data.accuracy}%`, 'success');
       setHasCompletedDemo(true);
     });
 
+    socket.on('race:tick', (data) => {
+      setTimeLeft(data.timeLeft);
+      if (data.timeLeft === 0) {
+        setIsRacing(false);
+      }
+    });
+
     return () => {
-      socket.off('rate-limit-warning');
-      socket.off('rate-limit-exceeded');
-      socket.off('message-sent');
+      socket.off('race:started');
+      socket.off('race:update');
+      socket.off('race:finished');
+      socket.off('race:tick');
     };
   }, [socket]);
 
-  const addLog = (msg, type = 'info') => {
-    setLogs(prev => [...prev.slice(-9), {
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [gameLog]);
+
+  const addLog = (text, type = 'info') => {
+    setGameLog(prev => [...prev, {
       id: Date.now() + Math.random(),
-      msg,
+      text,
       type,
-      time: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString()
     }]);
   };
 
-  const handleSendMessage = () => {
-    if (!message.trim() || isBlocked) return;
-
-    // Client-side rate limit check
-    if (requestsInWindow >= maxRequests) {
-      addLog('🚫 Client blocked: Too many requests!', 'error');
-      setIsBlocked(true);
-      setBlockedUntil(Date.now() + 10000);
-      
-      setTimeout(() => {
-        setIsBlocked(false);
-        setBlockedUntil(null);
-        setSendCount(0);
-        setRequestsInWindow(0);
-        addLog('✅ Block lifted - counter reset!', 'success');
-      }, 10000);
-      return;
+  const handleJoinRace = () => {
+    if (playerName.trim()) {
+      socket.emit('race:join', { playerName: playerName.trim() });
+      addLog(`✅ Joined as ${playerName}!`, 'info');
     }
-
-    // Send message
-    socket.emit('send-message', { message: message.trim() });
-    setSendCount(prev => prev + 1);
-    setRequestsInWindow(prev => prev + 1);
-    addLog(`📤 Sent #${requestsInWindow + 1}: "${message.trim()}"`, 'info');
-    setMessage('');
-    
-    // Enable quiz button after first message
-    setHasCompletedDemo(true);
-    
-    // Auto-reset counter after 10 seconds
-    setTimeout(() => {
-      setRequestsInWindow(prev => Math.max(0, prev - 1));
-    }, 10000);
   };
 
-  const handleSpamTest = () => {
-    addLog('💥 SPAM TEST: Sending 10 rapid messages...', 'warning');
-    setHasCompletedDemo(true); // Enable quiz button
+  const handleStartRace = () => {
+    socket.emit('race:start');
+    addLog('🏁 Starting race...', 'info');
+  };
+
+  const handleTyping = (e) => {
+    const typed = e.target.value;
+    setTypedText(typed);
     
-    for (let i = 0; i < 10; i++) {
-      setTimeout(() => {
-        if (!isBlocked) {
-          socket.emit('send-message', { message: `Spam message ${i + 1}` });
-          setSendCount(prev => prev + 1);
-          setRequestsInWindow(prev => prev + 1);
-        }
-      }, i * 100);
+    if (isRacing) {
+      socket.emit('race:typing', { 
+        typed: typed,
+        target: targetText 
+      });
+    }
+
+    if (typed === targetText) {
+      socket.emit('race:complete', { 
+        text: typed,
+        target: targetText 
+      });
+      setIsRacing(false);
     }
   };
 
@@ -169,28 +164,30 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
     return { correct, total: quiz.length };
   };
 
+  const submitQuiz = () => {
+    setQuizSubmitted(true);
+  };
+
   // QUIZ SCREEN
   if (showQuiz) {
     return (
       <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
-          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-red-600 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-orange-600 rounded-full blur-[120px]"></div>
+          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
         </div>
 
         <div className="relative z-10">
-          <header className="bg-black/90 backdrop-blur-xl border-b border-red-500/30 sticky top-0 z-40">
+          <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30 sticky top-0 z-40">
             <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center justify-between">
                 <button onClick={() => setShowQuiz(false)} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
                   <span>←</span> <span className="hidden sm:inline">Back</span>
                 </button>
-
                 <div className="flex items-center gap-2 md:gap-3">
-                  <div className="text-2xl md:text-3xl">🔒</div>
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-red-500">LEVEL 11 QUIZ</h1>
+                  <div className="text-2xl md:text-3xl">⚡</div>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-cyan-400">LEVEL 8 QUIZ</h1>
                 </div>
-                
                 <div className="w-16 md:w-24"></div>
               </div>
             </div>
@@ -198,22 +195,21 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
 
           <div className="container mx-auto px-4 md:px-6 py-6 md:py-12">
             <div className="max-w-4xl mx-auto">
-              
               {!quizSubmitted ? (
-                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-red-500/30 overflow-hidden">
-                  <div className="p-6 md:p-10 border-b border-red-500/30 bg-red-500/5">
+                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-cyan-500/30 overflow-hidden">
+                  <div className="p-6 md:p-10 border-b border-cyan-500/30 bg-cyan-500/5">
                     <div className="flex items-center gap-3 md:gap-6">
                       <div className="text-4xl md:text-6xl">🧠</div>
                       <div>
-                        <h2 className="text-2xl md:text-4xl font-black text-red-400 mb-2">Security Quiz!</h2>
-                        <p className="text-sm md:text-lg text-gray-300">Test your knowledge</p>
+                        <h2 className="text-2xl md:text-4xl font-black text-cyan-400 mb-2">Test Your Knowledge!</h2>
+                        <p className="text-sm md:text-lg text-gray-300">Answer all questions about Custom Events</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="p-4 md:p-10 space-y-4 md:space-y-8">
                     {quiz.map((q, qIndex) => (
-                      <div key={qIndex} className="bg-black/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-red-500/20">
+                      <div key={qIndex} className="bg-black/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-cyan-500/20">
                         <h3 className="text-base md:text-xl font-bold text-white mb-3 md:mb-4">
                           Q{qIndex + 1}: {q.question}
                         </h3>
@@ -226,13 +222,13 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                                 onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
                                 className={`w-full text-left px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl font-semibold transition-all duration-300 ${
                                   isSelected
-                                    ? 'bg-red-500/30 border-2 border-red-500 text-white'
-                                    : 'bg-black/70 border border-red-500/20 text-gray-300 hover:border-red-500/50'
+                                    ? 'bg-cyan-500/30 border-2 border-cyan-500 text-white'
+                                    : 'bg-black/70 border border-cyan-500/20 text-gray-300 hover:border-cyan-500/50'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 md:gap-3">
                                   <div className={`w-4 h-4 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center ${
-                                    isSelected ? 'border-red-500 bg-red-500' : 'border-red-500/30'
+                                    isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-cyan-500/30'
                                   }`}>
                                     {isSelected && <div className="w-1.5 h-1.5 md:w-3 md:h-3 bg-white rounded-full"></div>}
                                   </div>
@@ -246,18 +242,18 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                     ))}
                   </div>
 
-                  <div className="p-4 md:p-10 border-t border-red-500/30 bg-black/50">
+                  <div className="p-4 md:p-10 border-t border-cyan-500/30 bg-black/50">
                     <button
-                      onClick={() => setQuizSubmitted(true)}
+                      onClick={submitQuiz}
                       disabled={Object.keys(quizAnswers).length !== quiz.length}
-                      className="w-full px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold rounded-xl md:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                      className="w-full px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl md:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
                     >
                       Submit Quiz
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-red-500/30 overflow-hidden">
+                <div className="bg-black/90 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-cyan-500/30 overflow-hidden">
                   <div className="p-6 md:p-10 text-center">
                     <div className="text-5xl md:text-7xl mb-4 md:mb-6">
                       {(() => {
@@ -267,7 +263,7 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       })()}
                     </div>
                     
-                    <h2 className="text-2xl md:text-4xl font-black text-red-400 mb-3 md:mb-4">Quiz Complete!</h2>
+                    <h2 className="text-2xl md:text-4xl font-black text-cyan-400 mb-3 md:mb-4">Quiz Complete!</h2>
                     <div className="text-4xl md:text-6xl font-black text-white mb-3 md:mb-4">
                       {calculateScore().correct} / {calculateScore().total}
                     </div>
@@ -275,10 +271,10 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       {(() => {
                         const { correct, total } = calculateScore();
                         const percentage = (correct / total) * 100;
-                        if (percentage === 100) return 'Perfect! Security Expert! 🏆';
-                        if (percentage >= 80) return 'Excellent! Well secured! 🎉';
+                        if (percentage === 100) return 'Perfect! Custom Events Master! 🏆';
+                        if (percentage >= 80) return 'Excellent work! 🎉';
                         if (percentage >= 60) return 'Good job! 👍';
-                        return 'Keep learning security! 💪';
+                        return 'Keep learning! 💪';
                       })()}
                     </p>
 
@@ -306,18 +302,18 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       })}
                     </div>
 
-                    <button
+                 <button
                   onClick={() => {
                     onComplete(); 
                     setTimeout(() => {
                       onBack();
                     }, 500);
                   }}
-                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
                 >
                   Back to Levels
                 </button>
-                  </div>
+                </div>
                 </div>
               )}
             </div>
@@ -332,12 +328,12 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
     return (
       <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
-          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-red-600 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-orange-600 rounded-full blur-[120px]"></div>
+          <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
         </div>
 
         <div className="relative z-10">
-          <header className="bg-black/90 backdrop-blur-xl border-b border-red-500/30 sticky top-0 z-40">
+          <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30 sticky top-0 z-40">
             <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center justify-between">
                 <button onClick={onBack} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
@@ -345,8 +341,8 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                 </button>
 
                 <div className="flex items-center gap-2 md:gap-3">
-                  <div className="text-2xl md:text-3xl">🔒</div>
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-red-500">Level 11</h1>
+                  <div className="text-2xl md:text-3xl">⚡</div>
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-cyan-400">LEVEL 8</h1>
                 </div>
                 
                 <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
@@ -365,229 +361,140 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
             
             {/* Hero */}
             <div className="text-center mb-12 md:mb-16">
-              <div className="text-6xl md:text-8xl mb-6">🛡️</div>
+              <div className="text-6xl md:text-8xl mb-6">⌨️</div>
               <h2 className="text-4xl md:text-6xl font-black mb-4">
-                <span className="bg-gradient-to-r from-red-400 via-orange-400 to-red-500 bg-clip-text text-transparent">
-                  RATE LIMITING & SECURITY
+                <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500 bg-clip-text text-transparent">
+                  CUSTOM EVENTS
                 </span>
               </h2>
               <p className="text-lg md:text-2xl text-gray-300 max-w-3xl mx-auto">
-                Prevent spam, abuse, and DDoS attacks - think like a professional developer!
+                Create YOUR own events with any name! Not limited to 'message' anymore.
               </p>
-            </div>
-
-            {/* Why It Matters */}
-            <div className="mb-12 md:mb-16 bg-black/60 border-2 border-red-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
-              <h3 className="text-2xl md:text-3xl font-black mb-6 text-red-400 flex items-center gap-2 md:gap-3">
-                <span>⚠️</span> Why Rate Limiting Matters
-              </h3>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5">
-                  <div className="text-3xl mb-3">💥</div>
-                  <h4 className="text-xl font-black mb-2 text-red-300">Without Rate Limiting:</h4>
-                  <ul className="space-y-2 text-gray-300 text-sm">
-                    <li>• Users can spam 1000s of messages/second</li>
-                    <li>• DDoS attacks crash your server</li>
-                    <li>• Malicious bots abuse your API</li>
-                    <li>• Server costs skyrocket 💸</li>
-                    <li>• App becomes unusable for real users</li>
-                  </ul>
-                </div>
-
-                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5">
-                  <div className="text-3xl mb-3">✅</div>
-                  <h4 className="text-xl font-black mb-2 text-green-300">With Rate Limiting:</h4>
-                  <ul className="space-y-2 text-gray-300 text-sm">
-                    <li>• Controlled traffic - predictable load</li>
-                    <li>• Prevent abuse and spam</li>
-                    <li>• Fair resource allocation</li>
-                    <li>• Lower server costs</li>
-                    <li>• Better user experience for everyone</li>
-                  </ul>
-                </div>
-              </div>
             </div>
 
             {/* Real-World Examples */}
             <div className="mb-12 md:mb-16">
-              <h3 className="text-2xl md:text-3xl font-black mb-6 text-red-400 flex items-center gap-2 md:gap-3">
+              <h3 className="text-2xl md:text-3xl font-black mb-6 text-cyan-400 flex items-center gap-2 md:gap-3">
                 <span>🌍</span> Real-World Examples
               </h3>
 
               <div className="grid md:grid-cols-3 gap-4 md:gap-6">
-                <div className="bg-gradient-to-br from-red-500/20 to-transparent border-2 border-red-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-red-400 hover:scale-105 transition-all duration-300">
-                  <div className="text-3xl md:text-4xl mb-3">🐦</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">Twitter API</h4>
-                  <p className="text-xs md:text-sm text-gray-300 mb-3">
-                    300 requests per 15 minutes per user
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
+                  <div className="text-3xl md:text-4xl mb-3">⌨️</div>
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Typing Games</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-2">
+                    race:start, race:typing, race:complete
                   </p>
-                  <div className="bg-red-500/10 rounded-lg p-2 text-xs">
-                    <code className="text-red-400">Prevents bot spam</code>
+                  <div className="bg-cyan-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-cyan-400">Custom events!</code>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-500/20 to-transparent border-2 border-red-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-red-400 hover:scale-105 transition-all duration-300">
-                  <div className="text-3xl md:text-4xl mb-3">📱</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">WhatsApp</h4>
-                  <p className="text-xs md:text-sm text-gray-300 mb-3">
-                    ~65 messages per minute limit
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
+                  <div className="text-3xl md:text-4xl mb-3">💬</div>
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Chat Apps</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-2">
+                    user:typing, user:online, msg:sent
                   </p>
-                  <div className="bg-red-500/10 rounded-lg p-2 text-xs">
-                    <code className="text-red-400">Stops spammers</code>
+                  <div className="bg-blue-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-blue-400">Organized!</code>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-500/20 to-transparent border-2 border-red-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-red-400 hover:scale-105 transition-all duration-300">
+                <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
                   <div className="text-3xl md:text-4xl mb-3">🎮</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">Discord</h4>
-                  <p className="text-xs md:text-sm text-gray-300 mb-3">
-                    5 messages per 5 seconds in chat
+                  <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Gaming</h4>
+                  <p className="text-xs md:text-sm text-gray-300 mb-2">
+                    player:move, player:attack, game:over
                   </p>
-                  <div className="bg-red-500/10 rounded-lg p-2 text-xs">
-                    <code className="text-red-400">Prevents flooding</code>
+                  <div className="bg-blue-500/10 rounded-lg p-2 text-xs">
+                    <code className="text-blue-400">Clean code!</code>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Rate Limiting Strategies */}
-            <div className="mb-12 md:mb-16 bg-black/60 border-2 border-red-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
-              <h3 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 text-red-400 flex items-center gap-2 md:gap-3">
-                <span>⚙️</span> Common Strategies
+            {/* Why Custom Events */}
+            <div className="mb-12 md:mb-16 bg-black/60 border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
+              <h3 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 text-cyan-400 flex items-center gap-2 md:gap-3">
+                <span>💡</span> Why Custom Events?
               </h3>
 
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start">
-                  <div className="text-3xl flex-shrink-0">1️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-white">Fixed Window</h4>
-                    <p className="text-gray-300 mb-3">Allow X requests per time window (e.g., 10 requests per minute)</p>
-                    <div className="bg-black rounded-lg border border-red-500/30 p-3">
-                      <code className="text-red-400 text-sm">Simple but has "burst" problem at window edges</code>
-                    </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl">❌</div>
+                    <h4 className="text-xl font-black text-red-400">Without Custom Events</h4>
+                  </div>
+                  <div className="bg-black/50 rounded-lg p-4 mb-4">
+                    <code className="text-red-400 text-sm">{`socket.emit('message', {
+  type: 'typing',
+  text: 'hello'
+});
+
+// Everything is 'message'!
+// Hard to organize 😵`}</code>
                   </div>
                 </div>
 
-                <div className="flex gap-4 items-start">
-                  <div className="text-3xl flex-shrink-0">2️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-yellow-400">Sliding Window</h4>
-                    <p className="text-gray-300 mb-3">Track requests in rolling time window</p>
-                    <div className="bg-black rounded-lg border border-yellow-500/30 p-3">
-                      <code className="text-yellow-400 text-sm">More fair - prevents burst attacks ✅</code>
-                    </div>
+                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="text-3xl">✅</div>
+                    <h4 className="text-xl font-black text-green-400">With Custom Events</h4>
                   </div>
-                </div>
+                  <div className="bg-black/50 rounded-lg p-4 mb-4">
+                    <code className="text-green-400 text-sm">{`socket.emit('race:typing', {
+  text: 'hello'
+});
 
-                <div className="flex gap-4 items-start">
-                  <div className="text-3xl flex-shrink-0">3️⃣</div>
-                  <div>
-                    <h4 className="text-xl font-black mb-2 text-green-400">Token Bucket</h4>
-                    <p className="text-gray-300 mb-3">Users get tokens that refill over time</p>
-                    <div className="bg-black rounded-lg border border-green-500/30 p-3">
-                      <code className="text-green-400 text-sm">Industry standard - used by AWS, Google ⭐</code>
-                    </div>
+// Clear & organized!
+// Easy to understand 🎯`}</code>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Code Example */}
-            <div className="mb-12 md:mb-16 bg-black/60 border-2 border-red-500/30 rounded-2xl md:rounded-3xl overflow-hidden">
-              <div className="p-4 md:p-8 border-b border-red-500/30 bg-red-500/5">
-                <h3 className="text-2xl md:text-3xl font-black text-red-400 flex items-center gap-2 md:gap-3">
+            <div className="mb-12 md:mb-16 bg-black/60 border-2 border-cyan-500/30 rounded-2xl md:rounded-3xl overflow-hidden">
+              <div className="p-4 md:p-8 border-b border-cyan-500/30 bg-cyan-500/5">
+                <h3 className="text-2xl md:text-3xl font-black text-cyan-400 flex items-center gap-2 md:gap-3">
                   <span>👨‍💻</span> The Code
                 </h3>
               </div>
               
               <div className="p-4 md:p-8">
-                <div className="bg-black rounded-xl border border-red-500/30 overflow-hidden">
-                  <div className="px-4 py-2 bg-black/80 border-b border-red-500/30 flex gap-2">
+                <div className="bg-black rounded-xl border border-cyan-500/30 overflow-hidden mb-6">
+                  <div className="px-4 py-2 bg-black/80 border-b border-cyan-500/30 flex gap-2">
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500"></div>
                   </div>
                   <pre className="p-4 md:p-6 text-xs md:text-sm overflow-x-auto font-mono">
-                    <code className="text-red-400">{`// SERVER - Simple Rate Limiter (Sliding Window)
-      const rateLimiters = new Map(); // Store per user
+                    <code className="text-cyan-400">{`// CLIENT - Send custom events
+socket.emit('race:start');
+socket.emit('race:typing', { text: 'hello' });
+socket.emit('race:complete', { wpm: 45 });
 
-      const MAX_REQUESTS = 5;        // 5 requests
-      const WINDOW_MS = 10000;       // per 10 seconds
+// SERVER - Listen for custom events
+socket.on('race:start', () => {
+  console.log('Race started!');
+  socket.emit('race:started', { text: 'Type this!' });
+});
 
-      socket.on('send-message', (data) => {
-        const userId = socket.id;
-        const now = Date.now();
-        
-        // Get user's request history
-        if (!rateLimiters.has(userId)) {
-          rateLimiters.set(userId, []);
-        }
-        
-        const requests = rateLimiters.get(userId);
-        
-        // Remove old requests outside window
-        const validRequests = requests.filter(
-          time => now - time < WINDOW_MS
-        );
-        
-        // Check if limit exceeded
-        if (validRequests.length >= MAX_REQUESTS) {
-          socket.emit('rate-limit-exceeded', {
-            message: 'Too many requests!',
-            retryAfter: 10000
-          });
-          return;
-        }
-        
-        // Add current request
-        validRequests.push(now);
-        rateLimiters.set(userId, validRequests);
-        
-        // Process message
-        socket.emit('message-sent', data);
-        
-        // Warn if approaching limit
-        if (validRequests.length >= MAX_REQUESTS - 1) {
-          socket.emit('rate-limit-warning', {
-            remaining: MAX_REQUESTS - validRequests.length
-          });
-        }
-      });`}</code>
+socket.on('race:typing', (data) => {
+  console.log('User typed:', data.text);
+  socket.emit('race:update', { wpm: 45, accuracy: 98 });
+});`}</code>
                   </pre>
                 </div>
-              </div>
-            </div>
 
-            {/* Other Security Tips */}
-            <div className="mb-12 md:mb-16">
-              <h3 className="text-2xl md:text-3xl font-black mb-6 text-red-400 flex items-center gap-2 md:gap-3">
-                <span>🔐</span> Other Security Best Practices
-              </h3>
-
-              <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-                <div className="bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30 rounded-xl md:rounded-2xl p-5 md:p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-2xl md:text-3xl mb-2 md:mb-3">✅</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">Input Validation</h4>
-                  <p className="text-sm md:text-base text-gray-300">Always validate & sanitize client data</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30 rounded-xl md:rounded-2xl p-5 md:p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-2xl md:text-3xl mb-2 md:mb-3">🔑</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">Authentication</h4>
-                  <p className="text-sm md:text-base text-gray-300">Use JWT tokens or session auth</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30 rounded-xl md:rounded-2xl p-5 md:p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-2xl md:text-3xl mb-2 md:mb-3">🔒</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">Use HTTPS/WSS</h4>
-                  <p className="text-sm md:text-base text-gray-300">Encrypt all Socket.IO traffic</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30 rounded-xl md:rounded-2xl p-5 md:p-6 hover:scale-105 transition-transform duration-300">
-                  <div className="text-2xl md:text-3xl mb-2 md:mb-3">🚫</div>
-                  <h4 className="text-lg md:text-xl font-black mb-2 text-red-300">CORS Configuration</h4>
-                  <p className="text-sm md:text-base text-gray-300">Whitelist allowed origins only</p>
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                  <h4 className="font-bold text-cyan-300 mb-2">💡 Best Practices:</h4>
+                  <ul className="text-sm text-gray-300 space-y-1">
+                    <li>✓ Use descriptive names: <code className="bg-black/50 px-2 py-1 rounded">race:typing</code> not <code className="bg-black/50 px-2 py-1 rounded">type1</code></li>
+                    <li>✓ Use colons for namespacing: <code className="bg-black/50 px-2 py-1 rounded">user:login</code>, <code className="bg-black/50 px-2 py-1 rounded">chat:message</code></li>
+                    <li>✓ Send objects with data: <code className="bg-black/50 px-2 py-1 rounded">{`{wpm: 45}`}</code></li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -596,9 +503,9 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
             <div className="text-center">
               <button
                 onClick={() => setPhase('practice')}
-                className="px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 md:gap-4 mx-auto shadow-2xl shadow-red-500/50"
+                className="px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 md:gap-4 mx-auto shadow-2xl shadow-cyan-500/50"
               >
-                <span>Try Breaking It!</span>
+                <span>Try It Live!</span>
                 <span className="text-2xl md:text-3xl">→</span>
               </button>
             </div>
@@ -609,16 +516,16 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
     );
   }
 
-  // Practice Screen
+  // PRACTICE SCREEN - TYPING RACE
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="fixed inset-0 z-0 opacity-30">
-        <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-red-600 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-orange-600 rounded-full blur-[120px]"></div>
+        <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
       </div>
 
-      <div className="relative z-10 h-screen flex flex-col">
-        <header className="bg-black/90 backdrop-blur-xl border-b border-red-500/30">
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <header className="bg-black/90 backdrop-blur-xl border-b border-cyan-500/30">
           <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
             <div className="flex items-center justify-between">
               <button onClick={() => setPhase('theory')} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
@@ -626,158 +533,229 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
               </button>
 
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="text-2xl md:text-3xl">🛡️</div>
-                <h1 className="text-lg md:text-2xl font-black text-red-400">RATE LIMIT DEMO</h1>
+                <div className="text-2xl md:text-3xl">⌨️</div>
+                <h1 className="text-lg md:text-2xl font-black text-cyan-400">TYPING RACE</h1>
               </div>
               
-              <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${
-                isBlocked ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-green-500/20 border-green-500 text-green-400'
-              }`}>
-                {isBlocked ? '🚫 BLOCKED' : '✅ ACTIVE'}
-              </div>
+              {isRacing && (
+                <div className="px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-bold border-2 bg-yellow-500/20 border-yellow-500 text-yellow-400">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xl md:text-2xl">⏱️</div>
+                    <span className="text-lg md:text-xl font-black">{timeLeft}s</span>
+                  </div>
+                </div>
+              )}
+              
+              {!isRacing && isInGame && !finalScore && (
+                <div className="w-16 md:w-24"></div>
+              )}
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6">
           <div className="container mx-auto max-w-4xl">
             
-            {/* Rate Limit Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-              <div className="bg-black/60 border border-blue-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-blue-400">{requestsInWindow}</div>
-                <div className="text-xs text-gray-400">Requests in Window</div>
-              </div>
-              
-              <div className="bg-black/60 border border-yellow-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-yellow-400">{maxRequests}</div>
-                <div className="text-xs text-gray-400">Max Allowed</div>
-              </div>
-              
-              <div className="bg-black/60 border border-green-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-green-400">{Math.max(0, maxRequests - requestsInWindow)}</div>
-                <div className="text-xs text-gray-400">Remaining</div>
-              </div>
-              
-              <div className="bg-black/60 border border-red-500/30 rounded-xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-red-400">{sendCount}</div>
-                <div className="text-xs text-gray-400">Total Sent</div>
-              </div>
-            </div>
+            {!isInGame ? (
+              <div className="max-w-md mx-auto">
+                <div className="bg-black/60 rounded-2xl border-2 border-cyan-500/30 p-8 text-center">
+                  <div className="text-6xl mb-4">⌨️</div>
+                  <h2 className="text-3xl font-black text-cyan-400 mb-2">Join Typing Race</h2>
+                  <p className="text-gray-400 mb-6">Test your typing speed!</p>
 
-            {/* Blocked Banner */}
-            {isBlocked && blockedUntil && (
-              <div className="bg-cyan-500/20 border-2 border-cyan-500 rounded-xl p-4 mb-6 animate-pulse">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">🚫</div>
-                  <div>
-                    <h3 className="font-black text-cyan-400 text-lg">RATE LIMIT EXCEEDED!</h3>
-                    <p className="text-sm text-gray-300">
-                      Blocked for {Math.ceil((blockedUntil - Date.now()) / 1000)} seconds
+                  <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    placeholder="Enter your name..."
+                    className="w-full px-4 py-3 mb-4 bg-black/90 border-2 border-cyan-500/30 rounded-xl focus:border-cyan-500 focus:outline-none text-white text-center"
+                  />
+
+                  <button
+                    onClick={handleJoinRace}
+                    disabled={!playerName.trim()}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl disabled:opacity-50 transition-all mb-4"
+                  >
+                    ⌨️ Join Race
+                  </button>
+
+                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 text-left">
+                    <p className="text-xs text-cyan-300">
+                      <strong>💡 How it works:</strong>
+                      <br/>• Type the sentence shown as fast as you can
+                      <br/>• Custom events track your progress in real-time
+                      <br/>• See your WPM (words per minute) and accuracy!
                     </p>
                   </div>
                 </div>
               </div>
-            )}
+            ) : finalScore ? (
+              // RESULTS SCREEN
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-black/60 rounded-2xl border-2 border-cyan-500/30 p-8 text-center">
+                  <div className="text-7xl mb-6">
+                    {finalScore.wpm >= 60 ? '🏆' : finalScore.wpm >= 40 ? '🎉' : '👍'}
+                  </div>
+                  <h2 className="text-4xl font-black text-cyan-400 mb-6">Race Complete!</h2>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gradient-to-r from-cyan-500/20 to-transparent border-2 border-cyan-500/30 rounded-xl p-6">
+                      <div className="text-sm text-gray-400 mb-2">Speed</div>
+                      <div className="text-4xl font-black text-cyan-400">{finalScore.wpm}</div>
+                      <div className="text-xs text-gray-500 mt-1">words per minute</div>
+                    </div>
 
-            {/* Message Input */}
-            <div className="bg-black/60 border-2 border-cyan-500/30 rounded-xl p-4 md:p-6 mb-6">
-              <h3 className="text-xl font-black text-cyan-400 mb-4">Send a Message</h3>
-              
-              <div className="flex gap-3 mb-4">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  disabled={isBlocked}
-                  className="flex-1 px-4 py-3 bg-black/90 border-2 border-red-500/30 rounded-xl focus:border-red-500 focus:outline-none text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!message.trim() || isBlocked}
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  Send
-                </button>
-              </div>
-
-              <button
-                onClick={handleSpamTest}
-                disabled={isBlocked}
-                className="w-full px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                💥 SPAM TEST (Send 10 Rapid Messages)
-              </button>
-            </div>
-
-            {/* How It Works */}
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-              <div className="flex gap-3">
-                <div className="text-2xl">💡</div>
-                <div className="text-sm text-gray-300">
-                  <strong className="text-red-400">How it works:</strong>
-                  <ul className="mt-2 space-y-1">
-                    <li>• Limit: <strong>{maxRequests} messages per 10 seconds</strong></li>
-                    <li>• Exceed limit → <strong className="text-red-400">10 second block</strong></li>
-                    <li>• Counter resets after 10 seconds</li>
-                    <li>• Try the "Spam Test" to trigger it!</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Event Log */}
-            <div className="bg-black/60 border-2 border-red-500/30 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/30">
-                <h3 className="font-black text-red-400">📊 Event Log</h3>
-              </div>
-              
-              <div className="p-4 h-64 overflow-y-auto space-y-2">
-                {logs.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    <div>
-                      <div className="text-4xl mb-2 text-center">📋</div>
-                      <p className="text-sm">Send messages to see logs...</p>
+                    <div className="bg-gradient-to-r from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl p-6">
+                      <div className="text-sm text-gray-400 mb-2">Accuracy</div>
+                      <div className="text-4xl font-black text-blue-400">{finalScore.accuracy}%</div>
+                      <div className="text-xs text-gray-500 mt-1">correct characters</div>
                     </div>
                   </div>
-                ) : (
-                  logs.slice().reverse().map(log => (
-                    <div key={log.id} className={`px-3 py-2 rounded-lg border-l-4 ${
-                      log.type === 'error' ? 'bg-red-500/10 border-red-500 text-red-400' :
-                      log.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-400' :
-                      log.type === 'success' ? 'bg-green-500/10 border-green-500 text-green-400' :
-                      'bg-blue-500/10 border-blue-500 text-blue-300'
-                    }`}>
-                      <span className="text-xs text-gray-500">[{log.time}]</span> {log.msg}
-                    </div>
-                  ))
-                )}
+
+                  <div className="text-xl text-gray-300 mb-6">
+                    {finalScore.wpm >= 60 ? '🔥 Lightning fast!' : 
+                     finalScore.wpm >= 40 ? '💪 Great speed!' : 
+                     '👍 Keep practicing!'}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setFinalScore(null);
+                      setIsInGame(false);
+                      setPlayerName('');
+                      setTypedText('');
+                      setGameLog([]);
+                    }}
+                    className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl transition-all"
+                  >
+                    🔄 Race Again
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              // RACING SCREEN
+              <div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gradient-to-r from-cyan-500/20 to-transparent border-2 border-cyan-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl">⚡</div>
+                      <div>
+                        <div className="text-xs text-gray-400">SPEED</div>
+                        <div className="text-2xl font-black text-cyan-400">{wpm} WPM</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl">🎯</div>
+                      <div>
+                        <div className="text-xs text-gray-400">ACCURACY</div>
+                        <div className="text-2xl font-black text-blue-400">{accuracy}%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Target Text */}
+                <div className="bg-black/60 rounded-2xl border-2 border-cyan-500/30 p-6 mb-4">
+                  <div className="text-center mb-4">
+                    <div className="text-sm text-gray-400 mb-2">TYPE THIS:</div>
+                    <div className="text-xl md:text-2xl font-mono leading-relaxed">
+                      {targetText.split('').map((char, i) => {
+                        const typedChar = typedText[i];
+                        const isCorrect = typedChar === char;
+                        const isTyped = i < typedText.length;
+                        
+                        return (
+                          <span
+                            key={i}
+                            className={`${
+                              !isTyped ? 'text-gray-400' :
+                              isCorrect ? 'text-green-400' : 'text-red-400'
+                            }`}
+                          >
+                            {char}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Typing Input */}
+                <div className="mb-6">
+                  {!isRacing && timeLeft === 60 ? (
+                    <button
+                      onClick={handleStartRace}
+                      className="w-full px-8 py-6 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white text-2xl font-black rounded-xl transition-all transform hover:scale-105"
+                    >
+                      🏁 START RACE!
+                    </button>
+                  ) : (
+                    <input
+                      type="text"
+                      value={typedText}
+                      onChange={handleTyping}
+                      disabled={!isRacing}
+                      placeholder={isRacing ? "Start typing..." : "Race finished!"}
+                      className="w-full px-6 py-4 bg-black/90 border-2 border-cyan-500/30 rounded-xl focus:border-cyan-500 focus:outline-none text-white text-xl font-mono disabled:opacity-50"
+                      autoFocus
+                    />
+                  )}
+                </div>
+
+                {/* Game Log */}
+                <div className="bg-black/60 rounded-xl border border-cyan-500/30 p-4 h-32 overflow-y-auto">
+                  <h3 className="text-sm font-bold text-cyan-400 mb-2">📜 Events Log</h3>
+                  {gameLog.length === 0 ? (
+                    <p className="text-xs text-gray-500">No events yet</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {gameLog.slice(-5).map(log => (
+                        <div key={log.id} className={`text-xs p-1 rounded ${
+                          log.type === 'success' ? 'text-green-400' :
+                          log.type === 'info' ? 'text-cyan-400' :
+                          'text-gray-400'
+                        }`}>
+                          [{log.timestamp}] {log.text}
+                        </div>
+                      ))}
+                      <div ref={logEndRef} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                  <p className="text-xs text-cyan-300">
+                    <strong>💡 Custom Events:</strong> <code className="bg-black/50 px-2 py-1 rounded">race:typing</code>, <code className="bg-black/50 px-2 py-1 rounded">race:update</code>, <code className="bg-black/50 px-2 py-1 rounded">race:complete</code> firing in real-time!
+                  </p>
+                </div>
+              </div>
+            )}
 
           </div>
         </div>
 
-        {/* Take Quiz Button */}
         {hasCompletedDemo && !showQuiz && (
-          <div className="border-t border-red-500/30 bg-black/60 backdrop-blur-xl p-4 md:p-6">
+          <div className="border-t border-cyan-500/30 bg-black/60 backdrop-blur-xl p-4 md:p-6">
             <div className="container mx-auto max-w-4xl">
               <button
                 onClick={() => setShowQuiz(true)}
-                className="w-full px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-red-500/50 flex items-center justify-center gap-3 md:gap-4"
+                className="w-full px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 hover:from-cyan-500 hover:via-teal-500 hover:to-blue-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/50 flex items-center justify-center gap-3 md:gap-4"
               >
                 <span className="text-2xl md:text-3xl">🧠</span>
-                <span>Take the Security Quiz</span>
+                <span>Take the Test</span>
                 <span className="text-2xl md:text-3xl">→</span>
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
 }
 
-export default Level11;
+export default Level8;
