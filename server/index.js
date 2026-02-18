@@ -563,15 +563,6 @@ const SERVER_ID = process.env.SERVER_ID || 'Server-1';
 
 server.listen(PORT, () => {
   console.log(`
-╔═══════════════════════════════════════════════════════╗
-║        🚀 SOCKET.IO SERVER RUNNING                   ║
-╠═══════════════════════════════════════════════════════╣
-║  📡 Server ID: ${SERVER_ID.padEnd(37)}║
-║  📍 Port:      ${String(PORT).padEnd(37)}║
-║  🌐 URL:       http://localhost:${PORT.toString().padEnd(24)}║
-║  ${mongoose.connection.readyState === 1 ? '✅ MongoDB:   CONNECTED                          ' : '❌ MongoDB:   DISCONNECTED                       '}║
-║  ${pubClient.isReady ? '✅ Redis:     CONNECTED                          ' : '❌ Redis:     DISCONNECTED                       '}║
-╚═══════════════════════════════════════════════════════╝
 
 💡 TIP: To run multiple servers for Redis Adapter testing:
    Terminal 1: npm start

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats }) {
+function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats, onCompleteAll }) {
   const [lockedPopup, setLockedPopup] = useState(null);
   const [resetPopup, setResetPopup] = useState(false);
 
@@ -43,9 +43,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* 🔒 LOCKED POPUP */}
-      {/* ═══════════════════════════════════════════ */}
+      {/* LOCKED POPUP */}
       {lockedPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setLockedPopup(null)} />
@@ -76,33 +74,43 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* ⚠️ RESET POPUP */}
-      {/* ═══════════════════════════════════════════ */}
+      {/* RESET POPUP - FIXED THEME & TEXT */}
       {resetPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setResetPopup(false)} />
-          <div className="relative bg-[#0d1525] border-2 border-orange-500/50 rounded-3xl p-8 max-w-sm w-full shadow-2xl shadow-orange-500/20"
+          <div className="relative bg-[#0d1525] border-2 border-red-500/50 rounded-3xl p-8 max-w-sm w-full shadow-2xl shadow-red-500/20"
             style={{ animation: 'popIn 0.25s ease-out' }}>
-            <div className="absolute inset-0 bg-orange-500/5 rounded-3xl" />
+            {/* Red glow background */}
+            <div className="absolute inset-0 bg-red-500/5 rounded-3xl" />
+            
             <div className="relative text-center">
               <div className="text-6xl mb-4">⚠️</div>
-              <h2 className="text-2xl font-black text-orange-400 mb-2">Reset Progress?</h2>
-              <p className="text-gray-400 text-sm mb-4">This will:</p>
-              <div className="bg-black/50 border border-orange-500/20 rounded-xl p-4 mb-4 text-left space-y-2">
-                <p className="text-sm text-red-400 flex items-center gap-2"><span>❌</span> Clear all completed levels</p>
-                <p className="text-sm text-red-400 flex items-center gap-2"><span>❌</span> Lock all levels (except Level 1)</p>
-                <p className="text-sm text-green-400 flex items-center gap-2"><span>✅</span> Unlock all levels for testing</p>
+              <h2 className="text-2xl font-black text-red-400 mb-2">Reset All Progress?</h2>
+              <p className="text-gray-400 text-sm mb-4">⚠️ This will erase everything:</p>
+              
+              {/* What will happen */}
+              <div className="bg-black/60 border border-red-500/20 rounded-xl p-4 mb-4 text-left space-y-2">
+                <p className="text-sm text-red-400 flex items-center gap-2">
+                  <span>❌</span> Clear all {completedLevels.length} completed level{completedLevels.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-sm text-red-400 flex items-center gap-2">
+                  <span>🔒</span> Lock Levels 2-12 (only Level 1 stays unlocked)
+                </p>
+                <p className="text-sm text-yellow-400 flex items-center gap-2">
+                  <span>⚡</span> You'll have to complete all levels again
+                </p>
               </div>
-              <p className="text-gray-600 text-xs mb-5">This action cannot be undone!</p>
+
+              <p className="text-gray-600 text-xs mb-5">⚠️ This action cannot be undone!</p>
+              
               <div className="flex gap-3">
                 <button onClick={() => setResetPopup(false)}
                   className="flex-1 px-4 py-3 bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-bold rounded-xl transition-all text-sm">
                   Cancel
                 </button>
                 <button onClick={() => { setResetPopup(false); onResetProgress(); }}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-sm">
-                  Yes, Reset!
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-sm">
+                  Yes, Reset All!
                 </button>
               </div>
             </div>
@@ -110,40 +118,22 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* 🏆 CONGRATULATIONS POPUP - AUTO TRIGGERED! */}
-      {/* ═══════════════════════════════════════════ */}
+      {/* CONGRATULATIONS POPUP */}
       {showCongrats && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" />
-
-          {/* Popup - scrollable & fits screen */}
           <div
             className="relative bg-[#0d1525] border-2 border-cyan-500/60 rounded-3xl w-full max-w-md overflow-y-auto shadow-2xl shadow-cyan-500/30 z-50"
             style={{ animation: 'popIn 0.3s ease-out', maxHeight: '90vh' }}
           >
-            {/* Top glow */}
             <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-purple-500/10 rounded-3xl pointer-events-none" />
-
             <div className="relative p-6 text-center">
-
-              {/* Trophy */}
               <div className="text-6xl mb-3 animate-bounce inline-block">🏆</div>
-
-              {/* Title */}
               <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 text-transparent bg-clip-text leading-tight">
                 CONGRATULATIONS!
               </h2>
-
-              {/* Subtitle */}
-              <p className="text-base font-black text-cyan-400 mb-1">
-                You're a Socket.IO Master! 🎓
-              </p>
-              <p className="text-gray-400 text-sm mb-5">
-                You've completed all 12 levels!
-              </p>
-
-              {/* Stats */}
+              <p className="text-base font-black text-cyan-400 mb-1">You're a Socket.IO Master! 🎓</p>
+              <p className="text-gray-400 text-sm mb-5">You've completed all 12 levels!</p>
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="bg-black/60 border border-cyan-500/30 rounded-xl p-3">
                   <div className="text-xl font-black text-cyan-400">12</div>
@@ -158,8 +148,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   <div className="text-xs text-gray-500">Level</div>
                 </div>
               </div>
-
-              {/* Skills */}
               <div className="bg-black/50 border border-cyan-500/20 rounded-xl p-4 mb-5 text-left">
                 <h3 className="text-xs font-black text-cyan-400 mb-3 flex items-center gap-2">
                   <span>🎯</span> Skills You Mastered:
@@ -178,19 +166,15 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   ))}
                 </div>
               </div>
-
-              {/* Buttons */}
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => setShowCongrats(false)}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white font-black rounded-2xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/30"
-                >
+                  className="w-full px-6 py-4 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white font-black rounded-2xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/30">
                   🎉 Awesome! Close
                 </button>
                 <button
                   onClick={() => { setShowCongrats(false); onResetProgress(); }}
-                  className="w-full px-6 py-3 bg-gray-800/80 hover:bg-gray-700 text-gray-400 font-bold rounded-2xl transition-all text-sm"
-                >
+                  className="w-full px-6 py-3 bg-gray-800/80 hover:bg-gray-700 text-gray-400 font-bold rounded-2xl transition-all text-sm">
                   🔄 Start Over
                 </button>
               </div>
@@ -206,7 +190,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
-
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-block">
@@ -239,13 +222,10 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
               style={{ width: `${(completedLevels.length / 12) * 100}%` }}
             />
           </div>
-          {/* Show re-open button if all done */}
           {completedLevels.length === 12 && (
             <div className="text-center mt-3">
-              <button
-                onClick={() => setShowCongrats(true)}
-                className="text-cyan-400 font-bold text-sm hover:text-cyan-300 transition-colors animate-pulse"
-              >
+              <button onClick={() => setShowCongrats(true)}
+                className="text-cyan-400 font-bold text-sm hover:text-cyan-300 transition-colors animate-pulse">
                 🏆 View Your Achievement!
               </button>
             </div>
@@ -265,13 +245,11 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   unlocked ? 'hover:scale-105 hover:shadow-2xl cursor-pointer' : 'opacity-50 cursor-pointer'
                 }`}
               >
-                {/* Completed badge */}
                 {completed && (
                   <div className="absolute top-3 right-3 z-20 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                     <span>✓</span><span>DONE</span>
                   </div>
                 )}
-                {/* Locked badge */}
                 {!unlocked && (
                   <div className="absolute top-3 right-3 z-20 bg-red-500/80 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                     <span>🔒</span><span>LOCKED</span>
@@ -300,13 +278,23 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           })}
         </div>
 
-        {/* Reset */}
-        <div className="text-center">
-          <button onClick={() => setResetPopup(true)}
-            className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all">
-            🔓 Unlock All Levels (Reset Progress)
+        {/* Testing Buttons */}
+        <div className="text-center space-y-3">
+          {/* Complete All Button */}
+          <button
+            onClick={onCompleteAll}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 border-2 border-green-500/50 hover:border-green-400 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg shadow-green-500/30">
+            ✅ Complete All Levels (Testing)
           </button>
-          <p className="text-xs text-gray-600 mt-2">For testing purposes only</p>
+
+          {/* Reset Button - UPDATED TEXT */}
+          <div>
+            <button onClick={() => setResetPopup(true)}
+              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all">
+              🔄 Reset All Progress
+            </button>
+            <p className="text-xs text-gray-600 mt-2">⚠️ Clears all completed levels - for testing only</p>
+          </div>
         </div>
 
         {/* Footer */}

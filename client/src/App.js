@@ -21,7 +21,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [completedLevels, setCompletedLevels] = useState([]);
-  const [showCongrats, setShowCongrats] = useState(false); // ← LIFTED UP HERE!
+  const [showCongrats, setShowCongrats] = useState(false);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -78,19 +78,16 @@ function App() {
   };
 
   const handleLevelComplete = (level) => {
-    // Add to completed if not already there
     setCompletedLevels(prev => {
       if (prev.includes(level)) return prev;
       const updated = [...prev, level];
 
       // ✅ IF LEVEL 12 COMPLETED → SHOW CONGRATS POPUP!
       if (level === 12) {
-        // Go back to selector first, then show popup
         setTimeout(() => {
           setCurrentLevel(null);
           localStorage.removeItem('currentLevel');
           setIsTransitioning(false);
-          // Small delay so selector renders before popup
           setTimeout(() => setShowCongrats(true), 200);
         }, 400);
       }
@@ -105,6 +102,20 @@ function App() {
     setCurrentLevel(null);
     setCompletedLevels([]);
     setShowCongrats(false);
+  };
+
+  // ✅ NEW: COMPLETE ALL LEVELS INSTANTLY (FOR TESTING)
+  const handleCompleteAllLevels = () => {
+    const allLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    setCompletedLevels(allLevels);
+    localStorage.setItem('completedLevels', JSON.stringify(allLevels));
+    
+    // Go back to selector
+    setCurrentLevel(null);
+    localStorage.removeItem('currentLevel');
+    
+    // Show congrats popup after a moment
+    setTimeout(() => setShowCongrats(true), 500);
   };
 
   const levelProps = {
@@ -137,8 +148,9 @@ function App() {
             onResetProgress={handleResetProgress}
             isConnected={isConnected}
             isTransitioning={isTransitioning}
-            showCongrats={showCongrats}              // ← PASS DOWN
-            setShowCongrats={setShowCongrats}        // ← PASS DOWN
+            showCongrats={showCongrats}
+            setShowCongrats={setShowCongrats}
+            onCompleteAll={handleCompleteAllLevels}  // ← PASS DOWN
           />
         );
     }
