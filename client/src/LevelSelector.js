@@ -19,6 +19,9 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     { num: 12, title: 'Redis Adapter',    icon: '⚡', color: 'cyan',   description: 'Scale across multiple servers - production ready!' }
   ];
 
+  // ✅ Check if there's any progress to reset
+  const hasProgress = completedLevels.length > 0;
+
   const isLevelUnlocked = (n) => n === 1 || completedLevels.includes(n - 1);
   const isLevelCompleted = (n) => completedLevels.includes(n);
 
@@ -74,21 +77,17 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
       )}
 
-      {/* RESET POPUP - FIXED THEME & TEXT */}
+      {/* RESET POPUP */}
       {resetPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setResetPopup(false)} />
           <div className="relative bg-[#0d1525] border-2 border-red-500/50 rounded-3xl p-8 max-w-sm w-full shadow-2xl shadow-red-500/20"
             style={{ animation: 'popIn 0.25s ease-out' }}>
-            {/* Red glow background */}
             <div className="absolute inset-0 bg-red-500/5 rounded-3xl" />
-            
             <div className="relative text-center">
               <div className="text-6xl mb-4">⚠️</div>
               <h2 className="text-2xl font-black text-red-400 mb-2">Reset All Progress?</h2>
               <p className="text-gray-400 text-sm mb-4">⚠️ This will erase everything:</p>
-              
-              {/* What will happen */}
               <div className="bg-black/60 border border-red-500/20 rounded-xl p-4 mb-4 text-left space-y-2">
                 <p className="text-sm text-red-400 flex items-center gap-2">
                   <span>❌</span> Clear all {completedLevels.length} completed level{completedLevels.length !== 1 ? 's' : ''}
@@ -100,9 +99,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   <span>⚡</span> You'll have to complete all levels again
                 </p>
               </div>
-
               <p className="text-gray-600 text-xs mb-5">⚠️ This action cannot be undone!</p>
-              
               <div className="flex gap-3">
                 <button onClick={() => setResetPopup(false)}
                   className="flex-1 px-4 py-3 bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-bold rounded-xl transition-all text-sm">
@@ -287,13 +284,24 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
             ✅ Complete All Levels (Testing)
           </button>
 
-          {/* Reset Button - UPDATED TEXT */}
+          {/* Reset Button - DISABLED if no progress */}
           <div>
-            <button onClick={() => setResetPopup(true)}
-              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all">
-              🔄 Reset All Progress
+            <button
+              onClick={() => hasProgress && setResetPopup(true)}
+              disabled={!hasProgress}
+              className={`px-6 py-3 border-2 font-bold rounded-xl transition-all ${
+                hasProgress
+                  ? 'bg-red-600/20 hover:bg-red-600/30 border-red-500/50 hover:border-red-500 text-red-400 cursor-pointer'
+                  : 'bg-gray-800/30 border-gray-700/50 text-gray-600 cursor-not-allowed opacity-50'
+              }`}>
+              🔄 Reset All Progress {!hasProgress && '(No Progress)'}
             </button>
-            <p className="text-xs text-gray-600 mt-2">⚠️ Clears all completed levels - for testing only</p>
+            <p className="text-xs text-gray-600 mt-2">
+              {hasProgress
+                ? '⚠️ Clears all completed levels - for testing only'
+                : '💡 Complete some levels first to enable reset'
+              }
+            </p>
           </div>
         </div>
 
