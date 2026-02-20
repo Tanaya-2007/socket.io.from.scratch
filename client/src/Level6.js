@@ -202,7 +202,7 @@ function Level6({ socket, isConnected, onBack, onComplete, isTransitioning }) {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <button onClick={() => setShowQuiz(false)} className="px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20">
-                  <span>←</span>
+                  <span>← Back</span>
                 </button>
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">⚡</div>
@@ -319,15 +319,7 @@ function Level6({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                     })}
                   </div>
 
-                  <button
-                  onClick={() => {
-                    onComplete(); 
-                    setTimeout(() => {
-                      onBack();
-                    }, 500);
-                  }}
-                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
-                >
+                  <button onClick={onComplete}>
                   Back to Levels
                 </button>
                 </div>
@@ -358,7 +350,7 @@ function Level6({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                   onClick={handleBack}
                   className="px-3 sm:px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20 text-sm sm:text-base"
                 >
-                  <span>←</span>
+                  <span>← Back</span>
                 </button>
 
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -544,7 +536,7 @@ socket.io.on('reconnect_attempt', () => {
                 onClick={() => setLevel6Phase('theory')}
                 className="px-3 sm:px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20 text-sm sm:text-base"
               >
-                <span>←</span>
+                <span>← Back</span>
               </button>
 
               <div className="flex items-center gap-2 sm:gap-3">

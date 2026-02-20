@@ -275,15 +275,7 @@ if (showQuiz) {
                   })}
                 </div>
 
-                <button
-                  onClick={() => {
-                    onComplete(); 
-                    setTimeout(() => {
-                      onBack();
-                    }, 500);
-                  }}
-                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
-                >
+                <button onClick={onComplete}>
                   Back to Levels
                 </button>
               </div>
@@ -315,7 +307,7 @@ if (showQuiz) {
                   onClick={handleBack}
                   className="px-3 sm:px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20 text-sm sm:text-base"
                 >
-                  <span>←</span>
+                  <span>← Back</span>
                 </button>
 
                 {/* Title */}
@@ -580,7 +572,7 @@ socket.on('room-message', (data) => {
               onClick={() => setLevel2Phase('theory')}
               className="px-3 sm:px-4 py-2 bg-[#1a1f35] hover:bg-[#232940] rounded-lg transition-all flex items-center gap-2 border border-purple-500/20 text-sm sm:text-base"
             >
-              <span>←</span>
+              <span>← Back</span>
             </button>
             
             <div className="flex items-center gap-2 sm:gap-3">

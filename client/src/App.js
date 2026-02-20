@@ -36,6 +36,8 @@ function App() {
   useEffect(() => {
     if (currentLevel !== null) {
       localStorage.setItem('currentLevel', currentLevel.toString());
+    } else {
+      localStorage.removeItem('currentLevel');
     }
   }, [currentLevel]);
 
@@ -60,42 +62,63 @@ function App() {
     };
   }, []);
 
-  const handleLevelSelect = (level) => {
+  // ═══════════════════════════════════════════════════════
+  // 🎯 CENTRALIZED NAVIGATION FUNCTIONS (CONSISTENT EVERYWHERE)
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * Navigate to a specific level with smooth transition
+   */
+  const navigateToLevel = (levelNum) => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentLevel(level);
+      setCurrentLevel(levelNum);
       setIsTransitioning(false);
     }, 300);
   };
 
-  const handleBackToSelector = () => {
+  /**
+   * Go back to level selector with smooth transition
+   */
+  const navigateToSelector = () => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentLevel(null);
-      localStorage.removeItem('currentLevel');
       setIsTransitioning(false);
     }, 300);
   };
 
-  const handleLevelComplete = (level) => {
+  /**
+   * Complete a level and handle post-completion logic
+   */
+  const handleLevelComplete = (levelNum) => {
+    // Add to completed if not already there
     setCompletedLevels(prev => {
-      if (prev.includes(level)) return prev;
-      const updated = [...prev, level];
+      if (prev.includes(levelNum)) return prev;
+      const updated = [...prev, levelNum];
 
-      // ✅ IF LEVEL 12 COMPLETED → SHOW CONGRATS POPUP!
-      if (level === 12) {
+      // Special handling for Level 12 completion
+      if (levelNum === 12) {
+        // Transition back to selector, then show congrats
+        setIsTransitioning(true);
         setTimeout(() => {
           setCurrentLevel(null);
-          localStorage.removeItem('currentLevel');
           setIsTransitioning(false);
-          setTimeout(() => setShowCongrats(true), 200);
+          // Show congrats popup after selector loads
+          setTimeout(() => setShowCongrats(true), 300);
         }, 400);
+      } else {
+        // For other levels, just go back to selector
+        navigateToSelector();
       }
 
       return updated;
     });
   };
 
+  /**
+   * Reset all progress (for testing)
+   */
   const handleResetProgress = () => {
     localStorage.removeItem('currentLevel');
     localStorage.removeItem('completedLevels');
@@ -104,53 +127,85 @@ function App() {
     setShowCongrats(false);
   };
 
-  // ✅ NEW: COMPLETE ALL LEVELS INSTANTLY (FOR TESTING)
-  const handleCompleteAllLevels = () => {
+  /**
+   * Complete all levels instantly (for testing)
+   */
+  const handleCompleteAll = () => {
     const allLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     setCompletedLevels(allLevels);
-    localStorage.setItem('completedLevels', JSON.stringify(allLevels));
-    
-    // Go back to selector
     setCurrentLevel(null);
-    localStorage.removeItem('currentLevel');
-    
-    // Show congrats popup after a moment
     setTimeout(() => setShowCongrats(true), 500);
   };
+
+  // ═══════════════════════════════════════════════════════
+  // 🎨 PROPS PASSED TO ALL LEVELS (CONSISTENT INTERFACE)
+  // ═══════════════════════════════════════════════════════
 
   const levelProps = {
     socket,
     isConnected,
-    onBack: handleBackToSelector,
-    onComplete: handleLevelComplete,
-    isTransitioning
+    onBack: navigateToSelector,        // ← Consistent across all levels
+    isTransitioning                     // ← For fade animations
   };
 
-  const renderLevel = () => {
+  // ═══════════════════════════════════════════════════════
+  // 🧭 RENDER CURRENT VIEW
+  // ═══════════════════════════════════════════════════════
+
+  const renderCurrentView = () => {
+    // Show level selector
+    if (currentLevel === null) {
+      return (
+        <LevelSelector
+          onLevelSelect={navigateToLevel}
+          completedLevels={completedLevels}
+          onResetProgress={handleResetProgress}
+          isConnected={isConnected}
+          isTransitioning={isTransitioning}
+          showCongrats={showCongrats}
+          setShowCongrats={setShowCongrats}
+          onCompleteAll={handleCompleteAll}
+        />
+      );
+    }
+
+    // Show specific level
     switch (currentLevel) {
-      case 1:  return <Level1  {...levelProps} onComplete={() => handleLevelComplete(1)} />;
-      case 2:  return <Level2  {...levelProps} onComplete={() => handleLevelComplete(2)} />;
-      case 3:  return <Level3  {...levelProps} onComplete={() => handleLevelComplete(3)} />;
-      case 4:  return <Level4  {...levelProps} onComplete={() => handleLevelComplete(4)} />;
-      case 5:  return <Level5  {...levelProps} onComplete={() => handleLevelComplete(5)} />;
-      case 6:  return <Level6  {...levelProps} onComplete={() => handleLevelComplete(6)} />;
-      case 7:  return <Level7  {...levelProps} onComplete={() => handleLevelComplete(7)} />;
-      case 8:  return <Level8  {...levelProps} onComplete={() => handleLevelComplete(8)} />;
-      case 9:  return <Level9  {...levelProps} onComplete={() => handleLevelComplete(9)} />;
-      case 10: return <Level10 {...levelProps} onComplete={() => handleLevelComplete(10)} />;
-      case 11: return <Level11 {...levelProps} onComplete={() => handleLevelComplete(11)} />;
-      case 12: return <Level12 {...levelProps} onComplete={() => handleLevelComplete(12)} />;
+      case 1:
+        return <Level1  {...levelProps} onComplete={() => handleLevelComplete(1)} />;
+      case 2:
+        return <Level2  {...levelProps} onComplete={() => handleLevelComplete(2)} />;
+      case 3:
+        return <Level3  {...levelProps} onComplete={() => handleLevelComplete(3)} />;
+      case 4:
+        return <Level4  {...levelProps} onComplete={() => handleLevelComplete(4)} />;
+      case 5:
+        return <Level5  {...levelProps} onComplete={() => handleLevelComplete(5)} />;
+      case 6:
+        return <Level6  {...levelProps} onComplete={() => handleLevelComplete(6)} />;
+      case 7:
+        return <Level7  {...levelProps} onComplete={() => handleLevelComplete(7)} />;
+      case 8:
+        return <Level8  {...levelProps} onComplete={() => handleLevelComplete(8)} />;
+      case 9:
+        return <Level9  {...levelProps} onComplete={() => handleLevelComplete(9)} />;
+      case 10:
+        return <Level10 {...levelProps} onComplete={() => handleLevelComplete(10)} />;
+      case 11:
+        return <Level11 {...levelProps} onComplete={() => handleLevelComplete(11)} />;
+      case 12:
+        return <Level12 {...levelProps} onComplete={() => handleLevelComplete(12)} />;
       default:
         return (
           <LevelSelector
-            onLevelSelect={handleLevelSelect}
+            onLevelSelect={navigateToLevel}
             completedLevels={completedLevels}
             onResetProgress={handleResetProgress}
             isConnected={isConnected}
             isTransitioning={isTransitioning}
             showCongrats={showCongrats}
             setShowCongrats={setShowCongrats}
-            onCompleteAll={handleCompleteAllLevels}  // ← PASS DOWN
+            onCompleteAll={handleCompleteAll}
           />
         );
     }
@@ -158,7 +213,7 @@ function App() {
 
   return (
     <div className="App">
-      {renderLevel()}
+      {renderCurrentView()}
     </div>
   );
 }

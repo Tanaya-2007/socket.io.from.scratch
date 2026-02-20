@@ -18,7 +18,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     { num: 11, title: 'Security',         icon: '🛡️', color: 'cyan',   description: 'Prevent spam, abuse, and DDoS attacks!' },
     { num: 12, title: 'Redis Adapter',    icon: '⚡', color: 'cyan',   description: 'Scale across multiple servers - production ready!' }
   ];
-
+  const [showAchievements, setShowAchievements] = useState(false);
   const hasProgress = completedLevels.length > 0;
   const isLevelUnlocked = (n) => n === 1 || completedLevels.includes(n - 1);
   const isLevelCompleted = (n) => completedLevels.includes(n);
@@ -119,122 +119,94 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
       )}
 
-      {/* 🏆 PROFESSIONAL EXPERT BADGE POPUP */}
-{showCongrats && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setShowCongrats(false)} />
-    
-    <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl p-6 md:p-10 max-w-lg w-full shadow-2xl border-2 border-cyan-400/30 z-50"
-      style={{ animation: 'popIn 0.4s ease-out' }}>
-      
-      {/* Glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-3xl blur-xl" />
-      
-      <div className="relative text-center">
-        {/* Trophy */}
-        <div className="text-6xl mb-4 animate-bounce">🏆</div>
+    {/* Congratulations popup */}
+    {showCongrats && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowCongrats(false)} />
         
-        {/* Title */}
-        <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 mb-8">
-          CONGRATULATIONS!
-        </h2>
-        
-        {/* PROFESSIONAL SHIELD BADGE */}
-        <div className="relative inline-block mb-8">
-          {/* Shield shape */}
-          <div className="relative w-48 h-56 mx-auto">
-            {/* Outer glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-t-full opacity-20 blur-2xl animate-pulse" />
-            
-            {/* Shield background */}
-            <svg viewBox="0 0 100 120" className="absolute inset-0 w-full h-full drop-shadow-2xl">
-              <defs>
-                <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#0ea5e9', stopOpacity: 1 }} />
-                  <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              <path d="M50 5 L90 20 L90 60 Q90 90 50 115 Q10 90 10 60 L10 20 Z" 
-                    fill="url(#shieldGrad)" 
-                    stroke="#fbbf24" 
-                    strokeWidth="2"/>
-            </svg>
-            
-            {/* Badge content */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              {/* Lightning bolt */}
-              <div className="text-5xl mb-1 animate-pulse">⚡</div>
-              
-              {/* Text */}
-              <div className="text-white font-black text-xl tracking-tight leading-tight">
-                SOCKET.IO
-              </div>
-              <div className="text-yellow-300 font-black text-2xl tracking-wider mt-1">
-                EXPERT
-              </div>
-              
-              {/* Stars decoration */}
-              <div className="flex gap-1 mt-2">
-                <span className="text-yellow-400 text-xs">⭐</span>
-                <span className="text-yellow-400 text-xs">⭐</span>
-                <span className="text-yellow-400 text-xs">⭐</span>
-              </div>
-            </div>
-          </div>
+        <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border-2 border-cyan-400/30 z-50"
+          style={{ animation: 'popIn 0.4s ease-out' }}>
           
-          {/* Floating sparkles around badge */}
-          <div className="absolute -top-2 -left-2 text-2xl animate-ping">✨</div>
-          <div className="absolute -top-2 -right-2 text-2xl animate-ping" style={{ animationDelay: '0.5s' }}>✨</div>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-2xl animate-ping" style={{ animationDelay: '1s' }}>💫</div>
-        </div>
-        
-        {/* Achievement message */}
-        <p className="text-lg md:text-xl text-white font-bold mb-6">
-          You've completed all 12 levels!
-        </p>
-        
-        {/* Skills */}
-        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-cyan-500/20">
-          <p className="text-cyan-300 font-bold mb-3 text-sm">MASTERED SKILLS</p>
-          <div className="grid grid-cols-2 gap-2 text-xs text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-green-400">✓</span>
-              <span className="text-gray-300">Real-time comms</span>
+          <div className="text-center">
+            {/* Trophy */}
+            <div className="text-5xl mb-3">🏆</div>
+            
+            {/* Title */}
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300 mb-5">
+              CONGRATULATIONS!
+            </h2>
+            
+            {/* SHIELD BADGE - CENTERED TEXT */}
+            <div className="relative inline-block mb-5">
+              <div className="relative w-36 h-44 mx-auto">
+                {/* Shield SVG */}
+                <svg viewBox="0 0 100 120" className="absolute inset-0 w-full h-full drop-shadow-2xl">
+                  <defs>
+                    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#0ea5e9', stopOpacity: 1 }} />
+                      <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                      <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
+                    </linearGradient>
+                  </defs>
+                  <path d="M50 5 L90 20 L90 60 Q90 90 50 115 Q10 90 10 60 L10 20 Z" 
+                        fill="url(#shieldGrad)" 
+                        stroke="#fbbf24" 
+                        strokeWidth="3"/>
+                </svg>
+                
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-4xl mt-0">⚡</div>
+                  <div className="text-white font-black text-lg text-center">SOCKET.IO</div>
+                  <div className="text-yellow-300 font-black text-xl text-center mt-0">EXPERT</div>
+                  
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-green-400">✓</span>
-              <span className="text-gray-300">Broadcasting</span>
+            
+            {/* Message */}
+            <p className="text-lg text-white font-bold mb-4">
+              You've completed all 12 levels!
+            </p>
+            
+            {/* Skills - CENTERED */}
+            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-cyan-500/20">
+              <p className="text-cyan-300 font-bold mb-3 text-xs uppercase tracking-wide text-center">Mastered Skills</p>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs max-w-xs mx-auto">
+                <div className="flex items-center justify-start gap-1.5">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-200">Real-time comms</span>
+                </div>
+                <div className="flex items-center justify-start gap-1.5">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-200">Broadcasting</span>
+                </div>
+                <div className="flex items-center justify-start gap-1.5">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-200">Security</span>
+                </div>
+                <div className="flex items-center justify-start gap-1.5">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-200">Redis scaling</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-green-400">✓</span>
-              <span className="text-gray-300">Security</span>
+
+            {/* Ready badge */}
+            <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-full px-5 py-2 mb-5">
+              <span className="text-sm">🚀</span>
+              <span className="text-green-300 font-bold text-sm">Ready for production!</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-green-400">✓</span>
-              <span className="text-gray-300">Redis scaling</span>
-            </div>
+
+            {/* Button */}
+            <button
+              onClick={() => setShowCongrats(false)}
+              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white text-lg font-black rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl">
+              AWESOME! 🎊
+            </button>
           </div>
         </div>
-
-        {/* Ready message */}
-        <div className="inline-block bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-full px-6 py-2 mb-6">
-          <p className="text-green-300 font-bold text-sm flex items-center gap-2">
-            <span>🚀</span>
-            <span>Ready for production!</span>
-          </p>
-        </div>
-
-        {/* Close button */}
-        <button
-          onClick={() => setShowCongrats(false)}
-          className="w-full px-8 py-4 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white text-lg font-black rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl shadow-cyan-500/30">
-          AWESOME! 🎊
-        </button>
       </div>
-    </div>
-  </div>
-)}
+    )}
 
       {/* Background */}
       <div className="fixed inset-0 z-0">
@@ -275,15 +247,8 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
               style={{ width: `${(completedLevels.length / 12) * 100}%` }}
             />
           </div>
-          {completedLevels.length === 12 && (
-            <div className="text-center mt-3">
-              <button onClick={() => setShowCongrats(true)}
-                className="text-cyan-400 font-bold text-sm hover:text-cyan-300 transition-colors animate-pulse">
-                🏆 View Your Achievement!
-              </button>
-            </div>
-          )}
         </div>
+        
 
         {/* Levels Grid */}
         <div className="grid md:grid-cols-2 gap-4 md:gap-8 mb-8">

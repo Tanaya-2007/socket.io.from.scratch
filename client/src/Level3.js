@@ -142,7 +142,7 @@ function Level3({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                   onClick={() => setShowQuiz(false)} 
                   className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base"
                 >
-                  <span>←</span> <span className="hidden sm:inline">Back</span>
+                  <span>← Back</span> <span className="hidden sm:inline">Back</span>
                 </button>
 
                 <div className="flex items-center gap-2 md:gap-3">
@@ -268,15 +268,7 @@ function Level3({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       })}
                     </div>
 
-                  <button
-                  onClick={() => {
-                    onComplete(); 
-                    setTimeout(() => {
-                      onBack();
-                    }, 500);
-                  }}
-                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
-                >
+                    <button onClick={onComplete}>
                   Back to Levels
                 </button>
                   </div>
@@ -303,7 +295,7 @@ function Level3({ socket, isConnected, onBack, onComplete, isTransitioning }) {
             <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center justify-between">
                 <button onClick={onBack} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
-                  <span>←</span> <span className="hidden sm:inline">Back</span>
+                  <span>← </span> <span className="hidden sm:inline">Back</span>
                 </button>
 
                 <div className="flex items-center gap-2 md:gap-3">
