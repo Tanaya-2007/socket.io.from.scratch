@@ -9,6 +9,15 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
+  const [isPhaseTransitioning, setIsPhaseTransitioning] = useState(false);
+
+  const smoothTransition = (newPhase) => {
+    setIsPhaseTransitioning(true);
+    setTimeout(() => {
+      setPhase(newPhase);
+      setTimeout(() => setIsPhaseTransitioning(false), 50);
+    }, 300);
+  };
 
   const quiz = [
     {
@@ -106,7 +115,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   // QUIZ SCREEN
   if (showQuiz) {
     return (
-      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning || isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
           <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
@@ -116,7 +125,13 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
           <header className="bg-black/90 backdrop-blur-xl border-b border-blue-500/30 sticky top-0 z-40">
             <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center justify-between">
-                <button onClick={() => setShowQuiz(false)} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
+                <button onClick={() => {
+                  setIsPhaseTransitioning(true);
+                  setTimeout(() => {
+                    setShowQuiz(false);
+                    setTimeout(() => setIsPhaseTransitioning(false), 50);
+                  }, 300);
+                }} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
                   <span>←</span> <span className="hidden sm:inline">Back</span>
                 </button>
                 <div className="flex items-center gap-2 md:gap-3">
@@ -235,9 +250,15 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       })}
                     </div>
 
-                    <button onClick={onComplete}>
-                    Back to Levels
-                  </button>
+                    <button
+                      onClick={() => {
+                        onComplete();
+                        setTimeout(() => onBack(), 500);
+                      }}
+                      className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
+                    >
+                      Back to Levels
+                    </button>
                   </div>
                 </div>
               )}
@@ -251,7 +272,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   // THEORY SCREEN
   if (phase === 'theory') {
     return (
-      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning || isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
         <div className="fixed inset-0 z-0 opacity-30">
           <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
@@ -281,7 +302,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
           </header>
 
           <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-6xl">
-           
+            
             {/* Real-World Examples */}
             <div className="mb-8 md:mb-12">
               <h3 className="text-2xl md:text-3xl font-black mb-6 text-blue-400 flex items-center gap-2 md:gap-3">
@@ -344,9 +365,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                   </p>
                   <div className="bg-black/50 rounded-lg p-4">
                     <code className="text-cyan-400 text-xs md:text-sm">
-                      socket.on('message', (data) =&gt; {'{'}
-                      <br/>&nbsp;&nbsp;console.log(data);
-                      <br/>{'}'});
+                      socket.on('message', (data) =&gt; {'{'}<br/>&nbsp;&nbsp;console.log(data);<br/>{'}'});
                     </code>
                   </div>
                 </div>
@@ -393,7 +412,7 @@ io.on('connection', (socket) => {
 
             <div className="text-center">
               <button
-                onClick={() => setPhase('practice')}
+                onClick={() => smoothTransition('practice')}
                 className="px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 flex items-center gap-3 md:gap-4 mx-auto shadow-2xl shadow-blue-500/50"
               >
                 <span>Try It Live!</span>
@@ -408,7 +427,7 @@ io.on('connection', (socket) => {
 
   // PRACTICE SCREEN
   return (
-    <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning || isPhaseTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="fixed inset-0 z-0 opacity-30">
         <div className="absolute top-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-blue-600 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-cyan-600 rounded-full blur-[120px]"></div>
@@ -418,8 +437,8 @@ io.on('connection', (socket) => {
         <header className="bg-black/90 backdrop-blur-xl border-b border-blue-500/30">
           <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
             <div className="flex items-center justify-between">
-              <button onClick={() => setPhase('theory')} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
-                <span>←</span> <span className="hidden sm:inline">Back</span>
+              <button onClick={() => smoothTransition('theory')} className="px-3 md:px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm md:text-base">
+                <span>←</span> <span className="hidden sm:inline">Theory</span>
               </button>
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="text-2xl md:text-3xl">💬</div>
@@ -500,7 +519,13 @@ io.on('connection', (socket) => {
           <div className="border-t border-blue-500/30 bg-black/60 backdrop-blur-xl p-4 md:p-6">
             <div className="container mx-auto max-w-4xl">
               <button
-                onClick={() => setShowQuiz(true)}
+                onClick={() => {
+                  setIsPhaseTransitioning(true);
+                  setTimeout(() => {
+                    setShowQuiz(true);
+                    setTimeout(() => setIsPhaseTransitioning(false), 50);
+                  }, 300);
+                }}
                 className="w-full px-8 md:px-12 py-4 md:py-6 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:via-cyan-500 hover:to-blue-500 text-white text-lg md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/50 flex items-center justify-center gap-3 md:gap-4"
               >
                 <span className="text-2xl md:text-3xl">🧠</span>
