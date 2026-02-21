@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
+function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, initialProgress, onProgressUpdate,onLevelComplete}) {
   const [phase, setPhase] = useState('theory');
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -10,6 +10,8 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [hasCompletedDemo, setHasCompletedDemo] = useState(false);
   const [isPhaseTransitioning, setIsPhaseTransitioning] = useState(false);
+  const [currentStep, setCurrentStep] = useState(initialProgress?.currentStep || 0);
+  const [completedSteps, setCompletedSteps] = useState(initialProgress?.completedSteps || []);
 
   const smoothTransition = (newPhase) => {
     setIsPhaseTransitioning(true);
@@ -18,6 +20,23 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning }) {
       setTimeout(() => setIsPhaseTransitioning(false), 50);
     }, 300);
   };
+
+  // Auto-save on every change:
+  useEffect(() => {
+    onProgressUpdate({
+      completedSteps,
+      currentStep,
+      quizCompleted: quizSubmitted
+    });
+  }, [completedSteps, currentStep, quizSubmitted]);
+  
+  // When quiz submitted:
+  const submitQuiz = () => {
+    setQuizSubmitted(true);
+    const score = calculateScore();
+    onLevelComplete(score); 
+  };
+
 
   const quiz = [
     {
