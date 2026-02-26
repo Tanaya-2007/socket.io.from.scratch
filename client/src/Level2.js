@@ -19,7 +19,7 @@ function Level2({ socket, isConnected, onBack, isTransitioning }) {
   const [messagesSent, setMessagesSent] = useState(0);
   const messagesEndRef = useRef(null);
 
-  // ✨ SMOOTH TRANSITION FUNCTION
+
   const smoothTransition = (callback) => {
     setIsPhaseTransitioning(true);
     setTimeout(() => {
