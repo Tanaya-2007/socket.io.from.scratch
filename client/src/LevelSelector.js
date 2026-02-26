@@ -4,6 +4,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
   const [lockedPopup, setLockedPopup] = useState(null);
   const [resetPopup, setResetPopup] = useState(false);
 
+  // YOUR EXACT ORIGINAL COLORS - NOT CHANGED!
   const levels = [
     { num: 1,  title: 'Connection',       icon: '🔌', color: 'blue',   description: 'WebSockets, emit events, real-time responses' },
     { num: 2,  title: 'Rooms',            icon: '🏠', color: 'purple', description: 'Private groups like Kahoot, Discord, Zoom' },
@@ -18,7 +19,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     { num: 11, title: 'Security',         icon: '🛡️', color: 'cyan',   description: 'Prevent spam, abuse, and DDoS attacks!' },
     { num: 12, title: 'Redis Adapter',    icon: '⚡', color: 'cyan',   description: 'Scale across multiple servers - production ready!' }
   ];
-  const [showAchievements, setShowAchievements] = useState(false);
+
   const hasProgress = completedLevels.length > 0;
   const isLevelUnlocked = (n) => n === 1 || completedLevels.includes(n - 1);
   const isLevelCompleted = (n) => completedLevels.includes(n);
@@ -41,12 +42,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     cyan:   'text-cyan-400'
   }[color]);
 
-  // Get current date for certificate
-  const getCertificateDate = () => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date().toLocaleDateString('en-US', options);
-  };
-
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
 
@@ -58,7 +53,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
             style={{ animation: 'popIn 0.25s ease-out' }}>
             <div className="absolute inset-0 bg-blue-500/5 rounded-3xl" />
             <div className="relative text-center">
-              <div className="text-6xl mb-4">🔒</div>
+              <div className="text-6xl mb-4 animate-bounce">🔒</div>
               <h2 className="text-2xl font-black text-blue-400 mb-2">Level Locked!</h2>
               <p className="text-gray-400 text-sm mb-4">Complete this level first:</p>
               <div className="bg-blue-500/15 border border-blue-500/40 rounded-xl px-4 py-3 mb-5">
@@ -89,7 +84,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
             style={{ animation: 'popIn 0.25s ease-out' }}>
             <div className="absolute inset-0 bg-red-500/5 rounded-3xl" />
             <div className="relative text-center">
-              <div className="text-6xl mb-4">⚠️</div>
+              <div className="text-6xl mb-4 animate-bounce">⚠️</div>
               <h2 className="text-2xl font-black text-red-400 mb-2">Reset All Progress?</h2>
               <p className="text-gray-400 text-sm mb-4">⚠️ This will erase everything:</p>
               <div className="bg-black/60 border border-red-500/20 rounded-xl p-4 mb-4 text-left space-y-2">
@@ -119,114 +114,121 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
       )}
 
-    {/* Congratulations popup */}
-    {showCongrats && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowCongrats(false)} />
-        
-        <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border-2 border-cyan-400/30 z-50"
-          style={{ animation: 'popIn 0.4s ease-out' }}>
+      {/* YOUR ORIGINAL CONGRATULATIONS POPUP - UNCHANGED! */}
+      {showCongrats && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowCongrats(false)} />
           
-          <div className="text-center">
-            {/* Trophy */}
-            <div className="text-5xl mb-3">🏆</div>
+          <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border-2 border-cyan-400/30 z-50"
+            style={{ animation: 'popIn 0.4s ease-out' }}>
             
-            {/* Title */}
-            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300 mb-5">
-              CONGRATULATIONS!
-            </h2>
-            
-            {/* SHIELD BADGE - CENTERED TEXT */}
-            <div className="relative inline-block mb-5">
-              <div className="relative w-36 h-44 mx-auto">
-                {/* Shield SVG */}
-                <svg viewBox="0 0 100 120" className="absolute inset-0 w-full h-full drop-shadow-2xl">
-                  <defs>
-                    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" style={{ stopColor: '#0ea5e9', stopOpacity: 1 }} />
-                      <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                      <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
-                    </linearGradient>
-                  </defs>
-                  <path d="M50 5 L90 20 L90 60 Q90 90 50 115 Q10 90 10 60 L10 20 Z" 
-                        fill="url(#shieldGrad)" 
-                        stroke="#fbbf24" 
-                        strokeWidth="3"/>
-                </svg>
-                
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-4xl mt-0">⚡</div>
-                  <div className="text-white font-black text-lg text-center">SOCKET.IO</div>
-                  <div className="text-yellow-300 font-black text-xl text-center mt-0">EXPERT</div>
+            <div className="text-center">
+              <div className="text-5xl mb-3">🏆</div>
+              
+              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300 mb-5">
+                CONGRATULATIONS!
+              </h2>
+              
+              <div className="relative inline-block mb-5">
+                <div className="relative w-36 h-44 mx-auto">
+                  <svg viewBox="0 0 100 120" className="absolute inset-0 w-full h-full drop-shadow-2xl">
+                    <defs>
+                      <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#0ea5e9', stopOpacity: 1 }} />
+                        <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    <path d="M50 5 L90 20 L90 60 Q90 90 50 115 Q10 90 10 60 L10 20 Z" 
+                          fill="url(#shieldGrad)" 
+                          stroke="#fbbf24" 
+                          strokeWidth="3"/>
+                  </svg>
                   
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-4xl mt-0">⚡</div>
+                    <div className="text-white font-black text-lg text-center">SOCKET.IO</div>
+                    <div className="text-yellow-300 font-black text-xl text-center mt-0">EXPERT</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Message */}
-            <p className="text-lg text-white font-bold mb-4">
-              You've completed all 12 levels!
-            </p>
-            
-            {/* Skills - CENTERED */}
-            <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-cyan-500/20">
-              <p className="text-cyan-300 font-bold mb-3 text-xs uppercase tracking-wide text-center">Mastered Skills</p>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs max-w-xs mx-auto">
-                <div className="flex items-center justify-start gap-1.5">
-                  <span className="text-green-400">✓</span>
-                  <span className="text-gray-200">Real-time comms</span>
-                </div>
-                <div className="flex items-center justify-start gap-1.5">
-                  <span className="text-green-400">✓</span>
-                  <span className="text-gray-200">Broadcasting</span>
-                </div>
-                <div className="flex items-center justify-start gap-1.5">
-                  <span className="text-green-400">✓</span>
-                  <span className="text-gray-200">Security</span>
-                </div>
-                <div className="flex items-center justify-start gap-1.5">
-                  <span className="text-green-400">✓</span>
-                  <span className="text-gray-200">Redis scaling</span>
+              
+              <p className="text-lg text-white font-bold mb-4">
+                You've completed all 12 levels!
+              </p>
+              
+              <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-cyan-500/20">
+                <p className="text-cyan-300 font-bold mb-3 text-xs uppercase tracking-wide text-center">Mastered Skills</p>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs max-w-xs mx-auto">
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-gray-200">Real-time comms</span>
+                  </div>
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-gray-200">Broadcasting</span>
+                  </div>
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-gray-200">Security</span>
+                  </div>
+                  <div className="flex items-center justify-start gap-1.5">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-gray-200">Redis scaling</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Ready badge */}
-            <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-full px-5 py-2 mb-5">
-              <span className="text-sm">🚀</span>
-              <span className="text-green-300 font-bold text-sm">Ready for production!</span>
-            </div>
+              <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-full px-5 py-2 mb-5">
+                <span className="text-sm">🚀</span>
+                <span className="text-green-300 font-bold text-sm">Ready for production!</span>
+              </div>
 
-            {/* Button */}
-            <button
-              onClick={() => setShowCongrats(false)}
-              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white text-lg font-black rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl">
-              AWESOME! 🎊
-            </button>
+              <button
+                onClick={() => setShowCongrats(false)}
+                className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white text-lg font-black rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl">
+                AWESOME! 🎊
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-      {/* Background */}
+      {/* Background - GAMIFIED with floating particles */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-20" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[120px] opacity-20" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-20 animate-pulse" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[120px] opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        {/* Floating particles for gamified effect */}
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-cyan-500 rounded-full opacity-30"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${5 + Math.random() * 5}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 5}s`
+            }}
+          />
+        ))}
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
-        {/* Header */}
+        {/* Header - CHANGED FONT FOR SOCKET.IO */}
         <div className="text-center mb-16">
           <div className="inline-block">
-            <h1 className="text-6xl md:text-7xl font-black mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text animate-pulse">
+            {/* NEW FONT: Orbitron style with letter-spacing */}
+            <h1 className="text-6xl md:text-7xl font-black mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text tracking-widest" 
+                style={{ fontFamily: 'Arial Black, sans-serif', letterSpacing: '0.15em' }}>
               SOCKET.IO
             </h1>
-            <div className="h-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full" />
+            <div className="h-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full animate-pulse" />
           </div>
           <p className="text-xl md:text-2xl text-gray-400 mt-6 font-bold">Master Real-Time Communication in 12 Levels</p>
           <p className="text-sm text-gray-500 mt-2">Complete each level to unlock the next!</p>
           <div className="mt-6">
-            <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl border-2 ${
+            <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl border-2 transition-all duration-300 ${
               isConnected ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'
             }`}>
               <div className={`w-3 h-3 rounded-full animate-pulse ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -235,22 +237,24 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - GAMIFIED with glow effect */}
         <div className="max-w-4xl mx-auto mb-12">
           <div className="flex justify-between mb-2">
             <span className="text-sm font-bold text-gray-400">Your Progress</span>
             <span className="text-sm font-bold text-cyan-400">{completedLevels.length} / 12 Completed</span>
           </div>
-          <div className="w-full bg-black/50 rounded-full h-4 border border-cyan-500/30">
+          <div className="w-full bg-black/50 rounded-full h-4 border border-cyan-500/30 overflow-hidden shadow-lg shadow-cyan-500/20">
             <div
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 h-full rounded-full transition-all duration-700"
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 h-full rounded-full transition-all duration-700 relative"
               style={{ width: `${(completedLevels.length / 12) * 100}%` }}
-            />
+            >
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+            </div>
           </div>
         </div>
-        
 
-        {/* Levels Grid */}
+        {/* Levels Grid - YOUR ORIGINAL LAYOUT */}
         <div className="grid md:grid-cols-2 gap-4 md:gap-8 mb-8">
           {levels.map((level) => {
             const unlocked = isLevelUnlocked(level.num);
@@ -263,19 +267,25 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   unlocked ? 'hover:scale-105 hover:shadow-2xl cursor-pointer' : 'opacity-50 cursor-pointer'
                 }`}
               >
+                {/* GAMIFIED: Bouncing DONE badge */}
                 {completed && (
-                  <div className="absolute top-3 right-3 z-20 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  <div className="absolute top-3 right-3 z-20 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-bounce shadow-lg shadow-green-500/50">
                     <span>✓</span><span>DONE</span>
                   </div>
                 )}
                 {!unlocked && (
-                  <div className="absolute top-3 right-3 z-20 bg-red-500/80 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  <div className="absolute top-3 right-3 z-20 bg-red-500/80 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
                     <span>🔒</span><span>LOCKED</span>
                   </div>
                 )}
+                
                 <div className={`absolute inset-0 bg-gradient-to-br ${getGradient(level.color)} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                
                 <div className="relative z-10">
-                  <div className="text-5xl md:text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">{level.icon}</div>
+                  {/* GAMIFIED: Icon with glow and scale effect */}
+                  <div className="text-5xl md:text-6xl mb-4 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                    {level.icon}
+                  </div>
                   <div className="mb-4">
                     <div className={`text-xs font-bold ${getTextColor(level.color)} mb-1`}>LEVEL {level.num}</div>
                     <h3 className="text-2xl md:text-4xl font-black mb-2 text-white">{level.title}</h3>
@@ -286,6 +296,8 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                     {unlocked && <span className="group-hover:translate-x-2 transition-transform">→</span>}
                   </div>
                 </div>
+                
+                {/* GAMIFIED: Shine animation on hover */}
                 {unlocked && (
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-full group-hover:-translate-x-full transition-transform duration-1000" />
@@ -336,11 +348,15 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           to { opacity: 1; transform: scale(1); }
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
-          50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
         }
-        .animate-float {
-          animation: float ease-in-out infinite;
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
         }
       `}</style>
     </div>
