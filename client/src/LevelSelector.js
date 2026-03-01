@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning }) {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
-  const [showAchievements, setShowAchievements] = useState(false);
 
   const levels = [
     { num: 1, title: 'Connection', icon: '🔌', color: 'blue', description: 'WebSockets, emit events, real-time responses' },
@@ -40,6 +39,18 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     return completedLevels.includes(levelNum);
   };
 
+  // FIXED: Now returns correct color for CURRENT level, not completed ones
+  const getCurrentLevelColor = () => {
+    // Find first incomplete level
+    for (let i = 1; i <= 12; i++) {
+      if (!completedLevels.includes(i)) {
+        const level = levels.find(l => l.num === i);
+        return level ? level.color : 'blue';
+      }
+    }
+    return 'cyan'; // All complete
+  };
+
   const getColorClasses = (color) => {
     const colors = {
       blue: 'border-blue-500/30 hover:border-blue-400 hover:shadow-blue-500/30',
@@ -67,6 +78,17 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     return textColors[color] || textColors.cyan;
   };
 
+  // FIXED: Get border color for current level highlight
+  const getCurrentBorderColor = () => {
+    const currentColor = getCurrentLevelColor();
+    const borderColors = {
+      blue: 'border-blue-500',
+      purple: 'border-purple-500',
+      cyan: 'border-cyan-500'
+    };
+    return borderColors[currentColor] || 'border-cyan-500';
+  };
+
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       {/* Background Effects */}
@@ -76,11 +98,11 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
-        {/* Header */}
+        {/* Header - FIXED: Changed to "Socket.IO Mastery" */}
         <div className="text-center mb-16">
           <div className="inline-block">
             <h1 className="text-6xl md:text-7xl font-black mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text animate-pulse">
-              SOCKET.IO
+              SOCKET.IO MASTERY
             </h1>
             <div className="h-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full"></div>
           </div>
@@ -127,11 +149,12 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           )}
         </div>
 
-        {/* Levels Grid */}
+        {/* Levels Grid - FIXED: Border matches level color AND highlights current level */}
         <div className="grid md:grid-cols-2 gap-4 md:gap-8 mb-8">
           {levels.map((level) => {
             const unlocked = isLevelUnlocked(level.num);
             const completed = isLevelCompleted(level.num);
+            const isCurrent = unlocked && !completed; // Current level to complete
 
             return (
               <button
@@ -144,10 +167,21 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   }
                 }}
                 disabled={!unlocked}
-                className={`group relative bg-black/60 backdrop-blur-xl border-2 ${getColorClasses(level.color)} rounded-2xl md:rounded-3xl p-6 md:p-10 hover:scale-105 hover:shadow-2xl transition-all duration-500 text-left overflow-hidden ${
+                className={`group relative bg-black/60 backdrop-blur-xl border-2 ${
+                  isCurrent ? `${getColorClasses(level.color).replace('/30', '')}` : getColorClasses(level.color)
+                } rounded-2xl md:rounded-3xl p-6 md:p-10 hover:scale-105 hover:shadow-2xl transition-all duration-500 text-left overflow-hidden ${
                   !unlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                }`}
+                } ${isCurrent ? 'ring-4 ring-offset-4 ring-offset-[#0a0f1e] ' + (level.color === 'blue' ? 'ring-blue-500/50' : level.color === 'purple' ? 'ring-purple-500/50' : 'ring-cyan-500/50') : ''}`}
               >
+                {/* Current Level Badge */}
+                {isCurrent && (
+                  <div className="absolute top-3 right-3 z-20">
+                    <div className={`${level.color === 'blue' ? 'bg-blue-500' : level.color === 'purple' ? 'bg-purple-500' : 'bg-cyan-500'} text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse`}>
+                      <span>▶</span> <span>CURRENT</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Completed Badge */}
                 {completed && (
                   <div className="absolute top-3 right-3 z-20">
@@ -198,19 +232,35 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           <p className="mt-2">Complete all 12 levels to become a Socket.IO master! 🏆</p>
         </div>
 
-        {/* Testing Button */}
-        <div className="text-center mt-8">
+        {/* Testing Buttons - FIXED: Working buttons */}
+        <div className="text-center mt-8 space-y-3">
           <button
             onClick={() => {
               const allLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
               localStorage.setItem('completedLevels', JSON.stringify(allLevels));
               window.location.reload();
             }}
-            className="px-6 py-3 bg-yellow-600/20 hover:bg-yellow-600/30 border-2 border-yellow-500/50 hover:border-yellow-500 text-yellow-400 font-bold rounded-xl transition-all duration-300"
+            className="px-6 py-3 bg-green-600/20 hover:bg-green-600/30 border-2 border-green-500/50 hover:border-green-500 text-green-400 font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
           >
-            ⚡ Complete All Levels (Testing)
+            ✅ Complete All Levels (Testing)
           </button>
-          <p className="text-xs text-gray-600 mt-2">For testing the completion popup</p>
+          
+          <div>
+            <button
+              onClick={() => {
+                if (window.confirm('⚠️ Reset all progress? This cannot be undone!')) {
+                  localStorage.removeItem('completedLevels');
+                  localStorage.removeItem('currentLevel');
+                  sessionStorage.removeItem('congratsShown');
+                  window.location.reload();
+                }
+              }}
+              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all duration-300"
+            >
+              🔄 Reset Progress
+            </button>
+            <p className="text-xs text-gray-600 mt-2">For testing purposes only</p>
+          </div>
         </div>
       </div>
 
