@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import io from 'socket.io-client';
+import LandingPage from './LandingPage';
 import LevelSelector from './LevelSelector';
 import { useProgress } from '../contexts/ProgressContext';
 import Level1 from '../Level1';
@@ -22,6 +22,10 @@ function MainApp() {
   const [currentLevel, setCurrentLevel] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showLanding, setShowLanding] = useState(() => {
+    // Check if user has visited before
+    return !localStorage.getItem('hasVisitedLanding');
+  });
   
   const { 
     progress, 
@@ -32,10 +36,16 @@ function MainApp() {
     completeLevel 
   } = useProgress();
 
+  // Handle landing page start
+  const handleStartFromLanding = () => {
+    localStorage.setItem('hasVisitedLanding', 'true');
+    setShowLanding(false);
+  };
+
   // Handle level selection
   const handleLevelSelect = (levelNum) => {
     if (!isLevelUnlocked(levelNum)) {
-      alert(`Complete Level ${levelNum - 1} first!`);
+      alert(`🔒 Complete Level ${levelNum - 1} first!`);
       return;
     }
     
@@ -66,12 +76,20 @@ function MainApp() {
     };
   }, []);
 
+  // Show landing page if first visit
+  if (showLanding) {
+    return <LandingPage onStart={handleStartFromLanding} />;
+  }
+
   // Show loading screen
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-        <div className="text-white text-2xl font-bold">
-          Loading your progress... 🚀
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-bounce">⚡</div>
+          <div className="text-white text-2xl font-bold animate-pulse">
+            Loading your progress... 🚀
+          </div>
         </div>
       </div>
     );
@@ -81,11 +99,18 @@ function MainApp() {
   if (!currentLevel) {
     return (
       <LevelSelector
-        onSelectLevel={handleLevelSelect}
+        onLevelSelect={handleLevelSelect}
         completedLevels={progress.completedLevels}
         currentLevel={progress.currentLevel}
         isLevelUnlocked={isLevelUnlocked}
+        isConnected={isConnected}
         isTransitioning={isTransitioning}
+        onResetProgress={() => {
+          if (window.confirm('⚠️ Reset all progress? This cannot be undone!')) {
+            localStorage.clear();
+            window.location.reload();
+          }
+        }}
       />
     );
   }
@@ -99,6 +124,7 @@ function MainApp() {
     // Progress tracking props
     initialProgress: getLevelProgress(currentLevel),
     onProgressUpdate: (progressData) => saveLevelProgress(currentLevel, progressData),
+    onComplete: () => completeLevel(currentLevel, 100), // Pass 100 as default quiz score
     onLevelComplete: (quizScore) => completeLevel(currentLevel, quizScore)
   };
 
@@ -107,7 +133,7 @@ function MainApp() {
     case 1: return <Level1 {...levelProps} />;
     case 2: return <Level2 {...levelProps} />;
     case 3: return <Level3 {...levelProps} />;
-    case 4: return <Level4{...levelProps} />;
+    case 4: return <Level4 {...levelProps} />;
     case 5: return <Level5 {...levelProps} />;
     case 6: return <Level6 {...levelProps} />;
     case 7: return <Level7 {...levelProps} />;
@@ -116,7 +142,7 @@ function MainApp() {
     case 10: return <Level10 {...levelProps} />;
     case 11: return <Level11 {...levelProps} />;
     case 12: return <Level12 {...levelProps} />;
-    default: return <LevelSelector onSelectLevel={handleLevelSelect} />;
+    default: return <LevelSelector onLevelSelect={handleLevelSelect} completedLevels={progress.completedLevels} isConnected={isConnected} />;
   }
 }
 
