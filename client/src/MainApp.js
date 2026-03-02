@@ -18,13 +18,13 @@ import Level12 from '../Level12';
 const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:4000');
 
 function MainApp() {
-  // ALWAYS start with landing page - no localStorage!
+ 
   const [showLanding, setShowLanding] = useState(true);
   const [currentLevel, setCurrentLevel] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // Load completed levels from localStorage (progress persists)
+ 
   const [completedLevels, setCompletedLevels] = useState(() => {
     const saved = localStorage.getItem('completedLevels');
     return saved ? JSON.parse(saved) : [];
@@ -32,12 +32,12 @@ function MainApp() {
   
   const [showCongrats, setShowCongrats] = useState(false);
 
-  // Save completed levels to localStorage when they change
+  
   React.useEffect(() => {
     localStorage.setItem('completedLevels', JSON.stringify(completedLevels));
   }, [completedLevels]);
 
-  // Handle start/login from landing page
+  
   const handleStart = () => {
     setIsTransitioning(true);
     setTimeout(() => {
@@ -64,7 +64,7 @@ function MainApp() {
     }, 300);
   };
 
-  // Complete all levels (testing)
+  // Complete all levels 
   const handleCompleteAll = () => {
     setCompletedLevels([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     setShowCongrats(true);
@@ -88,7 +88,7 @@ function MainApp() {
     };
   }, []);
 
-  // ALWAYS SHOW LANDING PAGE FIRST
+  
   if (showLanding) {
     return <LandingPage onStart={handleStart} />;
   }

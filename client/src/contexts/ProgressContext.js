@@ -1,8 +1,4 @@
-// =====================================================
-// CLIENT: contexts/ProgressContext.js
-// React Context for Progress Tracking
-// =====================================================
-
+// Progress trackiing
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 

@@ -98,7 +98,7 @@ function LandingPage({ onStart }) {
 
           {/* Footer note */}
           <p className="text-sm text-gray-600 mt-12">
-            ✨ Free • Interactive • No signup required
+          • Free • Interactive • 
           </p>
         </div>
       </div>

@@ -55,7 +55,7 @@ function LandingPage({ onStart }) {
             Build chat apps, multiplayer games, and production-ready applications.
           </p>
 
-          {/* Features - Minimalistic */}
+          {/* Features */}
           <div className="grid grid-cols-3 gap-6 mb-12 max-w-2xl mx-auto">
             <div className="bg-black/40 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 hover:scale-105 transition-all duration-300 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/30">
               <div className="text-4xl mb-2">⚡</div>

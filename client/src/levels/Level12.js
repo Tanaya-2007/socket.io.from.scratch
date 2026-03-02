@@ -141,7 +141,7 @@ function Level12({ socket, isConnected, onBack, onComplete, isTransitioning }) {
     return { correct, total: quiz.length };
   };
 
-  // QUIZ SCREEN
+  // Quiz screen
   if (showQuiz) {
     return (
       <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
@@ -297,7 +297,7 @@ function Level12({ socket, isConnected, onBack, onComplete, isTransitioning }) {
     );
   }
 
-  // THEORY SCREEN
+  // Theory screen
   if (phase === 'theory') {
     return (
       <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
