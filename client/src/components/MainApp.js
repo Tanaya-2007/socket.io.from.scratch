@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import io from 'socket.io-client';
 import LandingPage from './LandingPage';
 import LevelSelector from './LevelSelector';
-import { useProgress } from '../contexts/ProgressContext';
 import Level1 from '../Level1';
 import Level2 from '../Level2';
 import Level3 from '../Level3';
@@ -19,36 +18,36 @@ import Level12 from '../Level12';
 const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:4000');
 
 function MainApp() {
+  // ALWAYS start with landing page - no localStorage!
+  const [showLanding, setShowLanding] = useState(true);
   const [currentLevel, setCurrentLevel] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showLanding, setShowLanding] = useState(() => {
-    // Check if user has visited before
-    return !localStorage.getItem('hasVisitedLanding');
+  
+  // Load completed levels from localStorage (progress persists)
+  const [completedLevels, setCompletedLevels] = useState(() => {
+    const saved = localStorage.getItem('completedLevels');
+    return saved ? JSON.parse(saved) : [];
   });
   
-  const { 
-    progress, 
-    loading, 
-    isLevelUnlocked, 
-    getLevelProgress,
-    saveLevelProgress,
-    completeLevel 
-  } = useProgress();
+  const [showCongrats, setShowCongrats] = useState(false);
 
-  // Handle landing page start
-  const handleStartFromLanding = () => {
-    localStorage.setItem('hasVisitedLanding', 'true');
-    setShowLanding(false);
+  // Save completed levels to localStorage when they change
+  React.useEffect(() => {
+    localStorage.setItem('completedLevels', JSON.stringify(completedLevels));
+  }, [completedLevels]);
+
+  // Handle start/login from landing page
+  const handleStart = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setShowLanding(false);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 300);
   };
 
   // Handle level selection
   const handleLevelSelect = (levelNum) => {
-    if (!isLevelUnlocked(levelNum)) {
-      alert(`🔒 Complete Level ${levelNum - 1} first!`);
-      return;
-    }
-    
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentLevel(levelNum);
@@ -65,6 +64,19 @@ function MainApp() {
     }, 300);
   };
 
+  // Complete all levels (testing)
+  const handleCompleteAll = () => {
+    setCompletedLevels([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    setShowCongrats(true);
+  };
+
+  // Reset progress
+  const handleResetProgress = () => {
+    setCompletedLevels([]);
+    setShowCongrats(false);
+    localStorage.removeItem('completedLevels');
+  };
+
   // Socket connection
   React.useEffect(() => {
     socket.on('connect', () => setIsConnected(true));
@@ -76,23 +88,9 @@ function MainApp() {
     };
   }, []);
 
-  // Show landing page if first visit
+  // ALWAYS SHOW LANDING PAGE FIRST
   if (showLanding) {
-    return <LandingPage onStart={handleStartFromLanding} />;
-  }
-
-  // Show loading screen
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">⚡</div>
-          <div className="text-white text-2xl font-bold animate-pulse">
-            Loading your progress... 🚀
-          </div>
-        </div>
-      </div>
-    );
+    return <LandingPage onStart={handleStart} />;
   }
 
   // Show level selector
@@ -100,17 +98,13 @@ function MainApp() {
     return (
       <LevelSelector
         onLevelSelect={handleLevelSelect}
-        completedLevels={progress.completedLevels}
-        currentLevel={progress.currentLevel}
-        isLevelUnlocked={isLevelUnlocked}
+        completedLevels={completedLevels}
+        onResetProgress={handleResetProgress}
         isConnected={isConnected}
         isTransitioning={isTransitioning}
-        onResetProgress={() => {
-          if (window.confirm('⚠️ Reset all progress? This cannot be undone!')) {
-            localStorage.clear();
-            window.location.reload();
-          }
-        }}
+        showCongrats={showCongrats}
+        setShowCongrats={setShowCongrats}
+        onCompleteAll={handleCompleteAll}
       />
     );
   }
@@ -121,14 +115,21 @@ function MainApp() {
     isConnected,
     onBack: handleBack,
     isTransitioning,
-    // Progress tracking props
-    initialProgress: getLevelProgress(currentLevel),
-    onProgressUpdate: (progressData) => saveLevelProgress(currentLevel, progressData),
-    onComplete: () => completeLevel(currentLevel, 100), // Pass 100 as default quiz score
-    onLevelComplete: (quizScore) => completeLevel(currentLevel, quizScore)
+    onComplete: () => {
+      if (!completedLevels.includes(currentLevel)) {
+        const newCompleted = [...completedLevels, currentLevel];
+        setCompletedLevels(newCompleted);
+        
+        // Show congrats if all levels completed
+        if (newCompleted.length === 12) {
+          setShowCongrats(true);
+        }
+      }
+      handleBack();
+    }
   };
 
-  // Render appropriate level
+  
   switch(currentLevel) {
     case 1: return <Level1 {...levelProps} />;
     case 2: return <Level2 {...levelProps} />;
@@ -142,7 +143,7 @@ function MainApp() {
     case 10: return <Level10 {...levelProps} />;
     case 11: return <Level11 {...levelProps} />;
     case 12: return <Level12 {...levelProps} />;
-    default: return <LevelSelector onLevelSelect={handleLevelSelect} completedLevels={progress.completedLevels} isConnected={isConnected} />;
+    default: return <LevelSelector onLevelSelect={handleLevelSelect} />;
   }
 }
 
