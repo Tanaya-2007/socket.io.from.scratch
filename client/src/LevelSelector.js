@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning }) {
+function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats, onCompleteAll }) {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
 
   const levels = [
@@ -35,19 +35,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     return completedLevels.includes(levelNum - 1);
   };
 
-  const isLevelCompleted = (levelNum) => {
-    return completedLevels.includes(levelNum);
-  };
-
-  const getCurrentLevelColor = () => {
-    for (let i = 1; i <= 12; i++) {
-      if (!completedLevels.includes(i)) {
-        const level = levels.find(l => l.num === i);
-        return level ? level.color : 'blue';
-      }
-    }
-    return 'cyan';
-  };
+  const isLevelCompleted = (levelNum) => completedLevels.includes(levelNum);
 
   const getColorClasses = (color) => {
     const colors = {
@@ -76,16 +64,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     return textColors[color] || textColors.cyan;
   };
 
-  const getCurrentBorderColor = () => {
-    const currentColor = getCurrentLevelColor();
-    const borderColors = {
-      blue: 'border-blue-500',
-      purple: 'border-purple-500',
-      cyan: 'border-cyan-500'
-    };
-    return borderColors[currentColor] || 'border-cyan-500';
-  };
-
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       {/* Background Effects */}
@@ -95,10 +73,21 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
+
         {/* Header */}
         <div className="text-center mb-16">
+          {/* Back button */}
+          <div className="flex justify-start mb-6">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 px-4 py-2 bg-black/40 border border-white/10 hover:border-white/30 text-gray-400 hover:text-white text-sm font-bold rounded-xl transition-all duration-300"
+            >
+              ← Back to Home
+            </button>
+          </div>
+
           <div className="inline-block">
-            <h1 className="text-6xl md:text-7xl font-black mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text animate-pulse">
+            <h1 className="text-6xl md:text-7xl font-black mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
               SOCKET.IO MASTERY
             </h1>
             <div className="h-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full"></div>
@@ -150,7 +139,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           {levels.map((level) => {
             const unlocked = isLevelUnlocked(level.num);
             const completed = isLevelCompleted(level.num);
-            const isCurrent = unlocked && !completed;
 
             return (
               <button
@@ -163,21 +151,10 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   }
                 }}
                 disabled={!unlocked}
-                className={`group relative bg-black/60 backdrop-blur-xl border-2 ${
-                  isCurrent ? `${getColorClasses(level.color).replace('/30', '')}` : getColorClasses(level.color)
-                } rounded-2xl md:rounded-3xl p-6 md:p-10 hover:scale-105 hover:shadow-2xl transition-all duration-500 text-left overflow-hidden ${
+                className={`group relative bg-black/60 backdrop-blur-xl border-2 ${getColorClasses(level.color)} rounded-2xl md:rounded-3xl p-6 md:p-10 hover:scale-105 hover:shadow-2xl transition-all duration-500 text-left overflow-hidden ${
                   !unlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                } ${isCurrent ? 'ring-4 ring-offset-4 ring-offset-[#0a0f1e] ' + (level.color === 'blue' ? 'ring-blue-500/50' : level.color === 'purple' ? 'ring-purple-500/50' : 'ring-cyan-500/50') : ''}`}
+                }`}
               >
-                {/* Current Level Badge */}
-                {isCurrent && (
-                  <div className="absolute top-3 right-3 z-20">
-                    <div className={`${level.color === 'blue' ? 'bg-blue-500' : level.color === 'purple' ? 'bg-purple-500' : 'bg-cyan-500'} text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse`}>
-                      <span>▶</span> <span>CURRENT</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Completed Badge */}
                 {completed && (
                   <div className="absolute top-3 right-3 z-20">
@@ -264,17 +241,13 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
       {showCongratsPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowCongratsPopup(false)} />
-
           <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border-2 border-cyan-400/30 z-50"
             style={{ animation: 'popIn 0.4s ease-out' }}>
-
             <div className="text-center">
               <div className="text-5xl mb-3">🏆</div>
-
               <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300 mb-5">
                 CONGRATULATIONS!
               </h2>
-
               <div className="relative inline-block mb-5">
                 <div className="relative w-36 h-44 mx-auto">
                   <svg viewBox="0 0 100 120" className="absolute inset-0 w-full h-full drop-shadow-2xl">
@@ -286,11 +259,8 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                       </linearGradient>
                     </defs>
                     <path d="M50 5 L90 20 L90 60 Q90 90 50 115 Q10 90 10 60 L10 20 Z"
-                          fill="url(#shieldGrad)"
-                          stroke="#fbbf24"
-                          strokeWidth="3"/>
+                          fill="url(#shieldGrad)" stroke="#fbbf24" strokeWidth="3"/>
                   </svg>
-
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <div className="text-4xl mb-1">⚡</div>
                     <div className="text-white font-black text-lg text-center">SOCKET.IO</div>
@@ -303,38 +273,20 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   </div>
                 </div>
               </div>
-
-              <p className="text-lg text-white font-bold mb-4">
-                You've completed all 12 levels!
-              </p>
-
+              <p className="text-lg text-white font-bold mb-4">You've completed all 12 levels!</p>
               <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-cyan-500/20">
                 <p className="text-cyan-300 font-bold mb-3 text-xs uppercase tracking-wide text-center">Mastered Skills</p>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs max-w-xs mx-auto">
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-200">Real-time comms</span>
-                  </div>
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-200">Broadcasting</span>
-                  </div>
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-200">Security</span>
-                  </div>
-                  <div className="flex items-center justify-start gap-1.5">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-200">Redis scaling</span>
-                  </div>
+                  <div className="flex items-center justify-start gap-1.5"><span className="text-green-400">✓</span><span className="text-gray-200">Real-time comms</span></div>
+                  <div className="flex items-center justify-start gap-1.5"><span className="text-green-400">✓</span><span className="text-gray-200">Broadcasting</span></div>
+                  <div className="flex items-center justify-start gap-1.5"><span className="text-green-400">✓</span><span className="text-gray-200">Security</span></div>
+                  <div className="flex items-center justify-start gap-1.5"><span className="text-green-400">✓</span><span className="text-gray-200">Redis scaling</span></div>
                 </div>
               </div>
-
               <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-full px-5 py-2 mb-5">
                 <span className="text-sm">🚀</span>
                 <span className="text-green-300 font-bold text-sm">Ready for production!</span>
               </div>
-
               <button
                 onClick={() => setShowCongratsPopup(false)}
                 className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:via-blue-500 hover:to-purple-500 text-white text-lg font-black rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl">
