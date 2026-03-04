@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats, onCompleteAll }) {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
+  const [showResetPopup, setShowResetPopup] = useState(false);
 
   const levels = [
     { num: 1, title: 'Connection', icon: '🔌', color: 'blue', description: 'WebSockets, emit events, real-time responses' },
@@ -18,6 +19,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     { num: 12, title: 'Redis Adapter', icon: '🌐', color: 'cyan', description: 'Scale across multiple servers - production ready!' }
   ];
 
+  // Only show congrats popup when all 12 levels are genuinely completed by the user
   useEffect(() => {
     if (completedLevels.length === 12) {
       const hasShownPopup = sessionStorage.getItem('congratsShown');
@@ -62,6 +64,23 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
       cyan: 'text-cyan-400'
     };
     return textColors[color] || textColors.cyan;
+  };
+
+  const handleCompleteAllClick = () => {
+    const allLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    localStorage.setItem('completedLevels', JSON.stringify(allLevels));
+    onCompleteAll();
+    sessionStorage.setItem('congratsShown', 'true');
+    setTimeout(() => setShowCongratsPopup(true), 300);
+  };
+
+  const handleResetConfirm = () => {
+    localStorage.removeItem('completedLevels');
+    localStorage.removeItem('currentLevel');
+    sessionStorage.removeItem('congratsShown');
+    setShowResetPopup(false);
+    setShowCongratsPopup(false);
+    onResetProgress();
   };
 
   return (
@@ -124,14 +143,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
               style={{ width: `${(completedLevels.length / 12) * 100}%` }}
             ></div>
           </div>
-
-          {completedLevels.length === 12 && (
-            <div className="mt-4 text-center">
-              <div className="inline-block bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full font-black text-lg animate-pulse">
-                🎉 ALL LEVELS COMPLETED! YOU'RE A MASTER! 🏆
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Levels Grid */}
@@ -143,19 +154,12 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
             return (
               <button
                 key={level.num}
-                onClick={() => {
-                  if (unlocked) {
-                    onLevelSelect(level.num);
-                  } else {
-                    alert(`🔒 Please complete Level ${level.num - 1} first!`);
-                  }
-                }}
+                onClick={() => unlocked && onLevelSelect(level.num)}
                 disabled={!unlocked}
                 className={`group relative bg-black/60 backdrop-blur-xl border-2 ${getColorClasses(level.color)} rounded-2xl md:rounded-3xl p-6 md:p-10 hover:scale-105 hover:shadow-2xl transition-all duration-500 text-left overflow-hidden ${
                   !unlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 }`}
               >
-                {/* Completed Badge */}
                 {completed && (
                   <div className="absolute top-3 right-3 z-20">
                     <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
@@ -164,7 +168,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   </div>
                 )}
 
-                {/* Locked Badge */}
                 {!unlocked && (
                   <div className="absolute top-3 right-3 z-20">
                     <div className="bg-red-500/80 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
@@ -188,7 +191,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
                   </div>
                 </div>
 
-                {/* Shine Effect */}
                 {unlocked && (
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-full group-hover:-translate-x-full transition-transform duration-1000"></div>
@@ -208,11 +210,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         {/* Testing Buttons */}
         <div className="text-center mt-8 space-y-3">
           <button
-            onClick={() => {
-              const allLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-              localStorage.setItem('completedLevels', JSON.stringify(allLevels));
-              window.location.reload();
-            }}
+            onClick={handleCompleteAllClick}
             className="px-6 py-3 bg-green-600/20 hover:bg-green-600/30 border-2 border-green-500/50 hover:border-green-500 text-green-400 font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
           >
             ✅ Complete All Levels (Testing)
@@ -220,14 +218,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
 
           <div>
             <button
-              onClick={() => {
-                if (window.confirm('⚠️ Reset all progress? This cannot be undone!')) {
-                  localStorage.removeItem('completedLevels');
-                  localStorage.removeItem('currentLevel');
-                  sessionStorage.removeItem('congratsShown');
-                  window.location.reload();
-                }
-              }}
+              onClick={() => setShowResetPopup(true)}
               className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all duration-300"
             >
               🔄 Reset Progress
@@ -236,6 +227,40 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           </div>
         </div>
       </div>
+
+      {/* Reset Confirmation Popup */}
+      {showResetPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowResetPopup(false)} />
+          <div className="relative bg-[#0d1425] rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-white/10 z-50"
+            style={{ animation: 'popIn 0.4s ease-out' }}>
+            <div className="text-center">
+              {/* Icon with soft glow */}
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <span className="text-3xl">🔄</span>
+              </div>
+              <h2 className="text-xl font-black text-white mb-2">Reset your progress?</h2>
+              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                All your completed levels will be cleared.<br/>This can't be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowResetPopup(false)}
+                  className="flex-1 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm font-bold rounded-2xl transition-all duration-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetConfirm}
+                  className="flex-1 px-5 py-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm font-bold rounded-2xl transition-all duration-300"
+                >
+                  Yes, Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Congratulations Popup */}
       {showCongratsPopup && (

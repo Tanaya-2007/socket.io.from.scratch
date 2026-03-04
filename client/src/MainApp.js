@@ -18,7 +18,6 @@ import Level12 from './levels/Level12';
 const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:4000');
 
 function MainApp() {
- 
   const [showLanding, setShowLanding] = useState(true);
   const [currentLevel, setCurrentLevel] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -73,7 +72,6 @@ function MainApp() {
   React.useEffect(() => {
     socket.on('connect', () => setIsConnected(true));
     socket.on('disconnect', () => setIsConnected(false));
-    
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -104,6 +102,9 @@ function MainApp() {
     isConnected,
     onBack: handleBack,
     isTransitioning,
+    initialProgress: {},
+    onProgressUpdate: () => {},
+    onLevelComplete: () => {},
     onComplete: () => {
       if (!completedLevels.includes(currentLevel)) {
         const newCompleted = [...completedLevels, currentLevel];
