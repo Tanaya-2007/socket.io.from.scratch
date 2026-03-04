@@ -202,10 +202,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-16 text-gray-500 text-sm">
-          <p>Built with ❤️ using Socket.IO & React</p>
-          <p className="mt-2">Complete all 12 levels to become a Socket.IO master! 🏆</p>
-        </div>
 
         {/* Testing Buttons */}
         <div className="text-center mt-8 space-y-3">
@@ -219,12 +215,17 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           <div>
             <button
               onClick={() => setShowResetPopup(true)}
-              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all duration-300"
+              disabled={completedLevels.length === 0}
+              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-red-600/20 disabled:hover:border-red-500/50"
             >
               🔄 Reset Progress
             </button>
             <p className="text-xs text-gray-600 mt-2">For testing purposes only</p>
           </div>
+        <div className="text-center mt-16 text-gray-500 text-sm">
+          <p>Built with ❤️ using Socket.IO & React</p>
+          <p className="mt-2">Complete all 12 levels to become a Socket.IO master! 🏆</p>
+        </div>
         </div>
       </div>
 
