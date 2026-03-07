@@ -13,7 +13,6 @@ function LandingPage({ onStart }) {
   return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden flex items-center justify-center transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       
-      {/* Same background as LevelSelector */}
       <div className="fixed inset-0 z-0">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-20 animate-pulse" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[120px] opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
@@ -89,7 +88,7 @@ function LandingPage({ onStart }) {
             </button>
 
             <button
-              onClick={handleStart}
+              onClick={() => onLogin()}
               className="px-8 md:px-12 py-4 md:py-5 bg-black/40 hover:bg-black/60 border-2 border-cyan-500/30 hover:border-cyan-500 text-white text-lg md:text-xl font-bold rounded-2xl transition-all duration-300 hover:scale-105 min-w-[200px]"
             >
               🔑 Login

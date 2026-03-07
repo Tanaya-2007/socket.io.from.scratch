@@ -157,7 +157,7 @@ function Level2({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                 <span>←</span> <span className="hidden sm:inline">Back</span>
               </button>
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="text-2xl md:text-3xl">🚪</div>
+                <div className="text-2xl md:text-3xl">⚡</div>
                 <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-400">LEVEL 2 QUIZ</h1>
               </div>
               <div className="w-16 md:w-24"></div>
@@ -274,7 +274,7 @@ function Level2({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                 <span>←</span> <span className="hidden sm:inline">Back</span>
               </button>
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="text-2xl md:text-3xl">🚪</div>
+                <div className="text-2xl md:text-3xl">⚡</div>
                 <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-purple-400">LEVEL 2</h1>
               </div>
               <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 ${isConnected ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'}`}>
@@ -409,7 +409,7 @@ socket.on('room-message', ({ roomName, message }) => {
               <span>←</span> <span className="hidden sm:inline">Theory</span>
             </button>
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="text-2xl md:text-3xl">🚪</div>
+              <div className="text-2xl md:text-3xl">⚡</div>
               <h1 className="text-lg md:text-2xl font-black text-purple-400">LIVE ROOMS</h1>
             </div>
             <div className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold border-2 bg-green-500/20 border-green-500 text-green-400">
