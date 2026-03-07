@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function LandingPage({ onStart }) {
+function LandingPage({ onStart, onLogin }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleStart = () => {

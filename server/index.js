@@ -5,6 +5,9 @@ const cors = require('cors');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const { createClient } = require('redis');
 const mongoose = require('mongoose');
+const { router: authRouter } = require('./auth');
+app.use(express.json());
+app.use('/api/auth', authRouter);
 
 const app = express();
 const server = http.createServer(app);
