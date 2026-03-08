@@ -14,6 +14,14 @@ app.use(express.json());
 app.use(cors());
 app.use('/api/auth', authRouter);
 
+const session = require('express-session');
+const { setupOAuthRoutes, passport } = require('./oauth');
+
+app.use(session({ secret: 'session_secret', resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+app.use(passport.session());
+setupOAuthRoutes(app);
+
 const io = socketIO(server, {
   cors: {
     origin: "http://localhost:3000",

@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
 import LevelSelector from './LevelSelector';
+import OAuthSuccess from './OAuthSuccess';
 import Level1 from './levels/Level1';
 import Level2 from './levels/Level2';
 import Level3 from './levels/Level3';
@@ -19,17 +20,19 @@ import Level12 from './levels/Level12';
 const socket = io('http://localhost:4000');
 
 function App() {
-  const [screen, setScreen]               = useState('landing');
-  const [auth, setAuth]                   = useState(null);          // { token, username }
+  const [screen, setScreen] = useState(() =>
+    window.location.pathname === '/oauth-success' ? 'oauth-success' : 'landing'
+  );
+  const [auth, setAuth]                   = useState(null);
   const [currentLevel, setCurrentLevel]   = useState(null);
   const [completedLevels, setCompletedLevels] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('completedLevels')) || [];
     } catch { return []; }
   });
-  const [isConnected, setIsConnected]     = useState(false);
+  const [isConnected, setIsConnected]         = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showCongrats, setShowCongrats]   = useState(false);
+  const [showCongrats, setShowCongrats]       = useState(false);
 
   useEffect(() => {
     socket.on('connect',    () => setIsConnected(true));
@@ -37,9 +40,10 @@ function App() {
     return () => { socket.off('connect'); socket.off('disconnect'); };
   }, []);
 
-  // ── Auth helpers ──────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────
   const handleLogin = (authData) => {
     setAuth(authData);
+    window.history.replaceState({}, '', '/'); // clean /oauth-success from URL
     transitionTo('levels');
   };
 
@@ -59,11 +63,7 @@ function App() {
   };
 
   const handleLevelSelect = (levelNum) => {
-    // 🔒 Must be logged in to play levels
-    if (!auth) {
-      transitionTo('login');
-      return;
-    }
+    if (!auth) { transitionTo('login'); return; }
     transitionTo('level', levelNum);
   };
 
@@ -73,14 +73,10 @@ function App() {
     const updated = completedLevels.includes(levelNum)
       ? completedLevels
       : [...completedLevels, levelNum];
-
     setCompletedLevels(updated);
     localStorage.setItem('completedLevels', JSON.stringify(updated));
-
     setTimeout(() => transitionTo('levels'), 400);
-    if (levelNum === 12) {
-      setTimeout(() => setShowCongrats(true), 700);
-    }
+    if (levelNum === 12) setTimeout(() => setShowCongrats(true), 700);
   };
 
   const handleResetProgress = () => {
@@ -88,36 +84,34 @@ function App() {
     localStorage.removeItem('completedLevels');
   };
 
-  // ── Level component map ───────────────────────────────────
+  // ── Level map ─────────────────────────────────────────────
   const levelComponents = {
-    1: Level1, 2: Level2,  3: Level3,  4: Level4,
-    5: Level5, 6: Level6,  7: Level7,  8: Level8,
-    9: Level9, 10: Level10, 11: Level11, 12: Level12,
+    1: Level1,  2: Level2,  3: Level3,  4: Level4,
+    5: Level5,  6: Level6,  7: Level7,  8: Level8,
+    9: Level9,  10: Level10, 11: Level11, 12: Level12,
   };
 
   const levelProps = {
-    socket,
-    isConnected,
+    socket, isConnected,
     onBack: handleBack,
     onComplete: handleLevelComplete,
     isTransitioning,
   };
 
   // ── Screens ───────────────────────────────────────────────
-  if (screen === 'landing') return (
-    <LandingPage
-      onStart={() => {
-        // Start Learning → must be logged in
-        if (auth) transitionTo('levels');
-        else transitionTo('login');
-      }}
-      onLogin={() => transitionTo('login')}
-    />
-  );
+  if (screen === 'oauth-success')
+    return <OAuthSuccess onLogin={handleLogin} />;
 
-  if (screen === 'login') return (
-    <LoginPage onLogin={handleLogin} />
-  );
+  if (screen === 'landing')
+    return (
+      <LandingPage
+        onStart={() => auth ? transitionTo('levels') : transitionTo('login')}
+        onLogin={() => transitionTo('login')}
+      />
+    );
+
+  if (screen === 'login')
+    return <LoginPage onLogin={handleLogin} />;
 
   if (screen === 'level' && currentLevel) {
     const LevelComponent = levelComponents[currentLevel];
@@ -129,13 +123,13 @@ function App() {
   return (
     <LevelSelector
       onLevelSelect={handleLevelSelect}
-      completedLevels={completedLevels}          
+      completedLevels={completedLevels}
       onResetProgress={handleResetProgress}
       isConnected={isConnected}
       isTransitioning={isTransitioning}
       showCongrats={showCongrats}
       setShowCongrats={setShowCongrats}
-      auth={auth}                                
+      auth={auth}
       onLogout={handleLogout}
     />
   );
