@@ -5,12 +5,14 @@ const cors = require('cors');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const { createClient } = require('redis');
 const mongoose = require('mongoose');
-const { router: authRouter } = require('./auth');
-app.use(express.json());
-app.use('/api/auth', authRouter);
 
 const app = express();
 const server = http.createServer(app);
+
+const { router: authRouter } = require('./auth');
+app.use(express.json());
+app.use(cors());
+app.use('/api/auth', authRouter);
 
 const io = socketIO(server, {
   cors: {
@@ -24,10 +26,7 @@ app.use(cors());
 
 // MONGODB CONNECTION
 // ═══════════════════════════════════════════════════════════
-mongoose.connect('mongodb://localhost:27017/socketio-course', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect('mongodb://localhost:27017/socketio-course')
 .then(() => console.log('✅ MongoDB Connected!'))
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 

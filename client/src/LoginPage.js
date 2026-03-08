@@ -24,7 +24,17 @@ function LoginPage({ onLogin }) {
       });
 
       const data = await res.json();
-      if (!res.ok) return setError(data.message || 'Something went wrong');
+      if (!res.ok) {
+        setError(data.message || 'Something went wrong');
+        // Auto switch to register tab if user not found
+        if (res.status === 404) {
+          setTimeout(() => {
+            setIsRegister(true);
+            setError('');
+          }, 2000);
+        }
+        return;
+      }
 
       // Store token in memory (passed up to App)
       onLogin({ token: data.token, username: data.username });
@@ -120,6 +130,9 @@ function LoginPage({ onLogin }) {
           {error && (
             <div className="mt-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
               ❌ {error}
+              {error.includes('register') && (
+                <p className="text-cyan-400 text-xs mt-1">↩️ Switching to Register tab...</p>
+              )}
             </div>
           )}
 

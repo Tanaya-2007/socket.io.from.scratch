@@ -25,6 +25,11 @@ router.post('/register', async (req, res) => {
     if (!username || !email || !password)
       return res.status(400).json({ message: 'All fields are required' });
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email))
+      return res.status(400).json({ message: 'Please enter a valid email address' });
+
     const exists = await User.findOne({ $or: [{ email }, { username }] });
     if (exists)
       return res.status(409).json({ message: 'Username or email already taken' });
@@ -55,7 +60,7 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(404).json({ message: 'No account found with this email. Please register first!' });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match)
