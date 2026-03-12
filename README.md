@@ -103,4 +103,4 @@ Got a fix or want to add a module? Contributions are welcome!
 
 ---
 
-Built with love while learning real-time communication!
+Built with love by Tanaya❤️ while learning real-time communication!
