@@ -32,7 +32,7 @@ Whether you're a beginner trying to understand WebSockets or someone looking to 
 ---
 
 ## Tech Stack
-
+- **Frontend** - React.js + Tailwind CSS
 - **Runtime** — Node.js
 - **Framework** — Express.js
 - **Real-time** — Socket.IO
