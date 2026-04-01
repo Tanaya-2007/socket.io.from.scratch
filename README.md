@@ -37,7 +37,7 @@ Whether you're a beginner trying to understand WebSockets or someone looking to 
 - **Framework** — Express.js
 - **Real-time** — Socket.IO
 - **Database** — MongoDB (with Mongoose)
-<!-- - **Cache / Adapter** — Redis -->
+- **Cache / Adapter** — Redis
 
 ---
 
