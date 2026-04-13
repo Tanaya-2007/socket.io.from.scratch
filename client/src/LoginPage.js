@@ -10,6 +10,17 @@ function LoginPage({ onLogin }) {
 
   const handleSubmit = async () => {
     setError('');
+
+    // Frontend validation
+    if (isRegister) {
+      if (!form.username.trim()) return setError('Username is required');
+      if (!form.email.trim())    return setError('Email is required');
+      if (!form.password.trim()) return setError('Password is required');
+    } else {
+      if (!form.email.trim())    return setError('Email is required');
+      if (!form.password.trim()) return setError('Password is required');
+    }
+
     setLoading(true);
     try {
       const url  = isRegister ? '/api/auth/register' : '/api/auth/login';
@@ -56,7 +67,7 @@ function LoginPage({ onLogin }) {
           <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text tracking-widest mb-2">
             SOCKET.IO
           </h1>
-          <div className="h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full w-48 mx-auto animate-pulse mb-4" />
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full w-48 mx-auto mb-4" />
           <p className="text-gray-400 text-sm">{isRegister ? 'Create your account' : 'Welcome back!'}</p>
         </div>
 
@@ -95,7 +106,7 @@ function LoginPage({ onLogin }) {
             {['Login', 'Register'].map((tab, i) => (
               <button
                 key={tab}
-                onClick={() => { setIsRegister(!!i); setError(''); }}
+                onClick={() => { setIsRegister(!!i); setError(''); setForm({ username: '', email: '', password: '' }); }}
                 className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
                   isRegister === !!i
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg'
@@ -116,7 +127,7 @@ function LoginPage({ onLogin }) {
                   name="username"
                   value={form.username}
                   onChange={handleChange}
-                  placeholder="cooluser123"
+                  placeholder="Your display name"
                   className="w-full bg-black/50 border border-blue-500/20 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all"
                 />
               </div>
