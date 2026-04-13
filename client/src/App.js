@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import { ProgressProvider } from './contexts/ProgressContext';
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
 import LevelSelector from './LevelSelector';
@@ -23,12 +24,16 @@ function App() {
   const [screen, setScreen] = useState(() =>
     window.location.pathname === '/oauth-success' ? 'oauth-success' : 'landing'
   );
-  const [auth, setAuth]                   = useState(null);
-  const [currentLevel, setCurrentLevel]   = useState(null);
+  const [auth, setAuth] = useState(() => {
+    const token    = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    const avatar   = localStorage.getItem('avatar');
+    return token ? { token, username, avatar } : null;
+  });
+  const [currentLevel, setCurrentLevel]       = useState(null);
   const [completedLevels, setCompletedLevels] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('completedLevels')) || [];
-    } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('completedLevels')) || []; }
+    catch { return []; }
   });
   const [isConnected, setIsConnected]         = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -40,14 +45,25 @@ function App() {
     return () => { socket.off('connect'); socket.off('disconnect'); };
   }, []);
 
+  // If already logged in, skip landing
+  useEffect(() => {
+    if (auth && screen === 'landing') setScreen('levels');
+  }, []);
+
   // ── Auth ──────────────────────────────────────────────────
   const handleLogin = (authData) => {
+    localStorage.setItem('token',    authData.token);
+    localStorage.setItem('username', authData.username || '');
+    localStorage.setItem('avatar',   authData.avatar   || '');
     setAuth(authData);
-    window.history.replaceState({}, '', '/'); // clean /oauth-success from URL
+    window.history.replaceState({}, '', '/');
     transitionTo('levels');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('avatar');
     setAuth(null);
     transitionTo('landing');
   };
@@ -76,12 +92,19 @@ function App() {
     setCompletedLevels(updated);
     localStorage.setItem('completedLevels', JSON.stringify(updated));
     setTimeout(() => transitionTo('levels'), 400);
-    if (levelNum === 12) setTimeout(() => setShowCongrats(true), 700);
+    if (updated.length === 12) setTimeout(() => setShowCongrats(true), 700);
   };
 
   const handleResetProgress = () => {
     setCompletedLevels([]);
     localStorage.removeItem('completedLevels');
+  };
+
+  const handleCompleteAll = () => {
+    const all = [1,2,3,4,5,6,7,8,9,10,11,12];
+    setCompletedLevels(all);
+    localStorage.setItem('completedLevels', JSON.stringify(all));
+    setShowCongrats(true);
   };
 
   // ── Level map ─────────────────────────────────────────────
@@ -92,10 +115,16 @@ function App() {
   };
 
   const levelProps = {
-    socket, isConnected,
+    socket,
+    isConnected,
     onBack: handleBack,
-    onComplete: handleLevelComplete,
     isTransitioning,
+    initialProgress: {},
+    onProgressUpdate: () => {},
+    onLevelComplete:  () => {},
+    onComplete: () => {
+      handleLevelComplete(currentLevel);
+    }
   };
 
   // ── Screens ───────────────────────────────────────────────
@@ -116,22 +145,29 @@ function App() {
   if (screen === 'level' && currentLevel) {
     const LevelComponent = levelComponents[currentLevel];
     return LevelComponent
-      ? <LevelComponent {...levelProps} currentLevel={currentLevel} />
+      ? (
+        <ProgressProvider>
+          <LevelComponent {...levelProps} currentLevel={currentLevel} />
+        </ProgressProvider>
+      )
       : <div>Level not found</div>;
   }
 
   return (
-    <LevelSelector
-      onLevelSelect={handleLevelSelect}
-      completedLevels={completedLevels}
-      onResetProgress={handleResetProgress}
-      isConnected={isConnected}
-      isTransitioning={isTransitioning}
-      showCongrats={showCongrats}
-      setShowCongrats={setShowCongrats}
-      auth={auth}
-      onLogout={handleLogout}
-    />
+    <ProgressProvider>
+      <LevelSelector
+        onLevelSelect={handleLevelSelect}
+        completedLevels={completedLevels}
+        onResetProgress={handleResetProgress}
+        isConnected={isConnected}
+        isTransitioning={isTransitioning}
+        showCongrats={showCongrats}
+        setShowCongrats={setShowCongrats}
+        onCompleteAll={handleCompleteAll}
+        auth={auth}
+        onLogout={handleLogout}
+      />
+    </ProgressProvider>
   );
 }
 
