@@ -19,40 +19,92 @@ import Level11 from './levels/Level11';
 import Level12 from './levels/Level12';
 
 const socket = io('http://localhost:4000');
+const API = 'http://localhost:4000';
 
 function App() {
   const [screen, setScreen] = useState(() => {
     if (window.location.pathname === '/oauth-success') return 'oauth-success';
-    const savedScreen = sessionStorage.getItem('currentScreen');
-    return savedScreen || 'landing';
+    return sessionStorage.getItem('currentScreen') || 'landing';
   });
-  const [currentLevel, setCurrentLevel] = useState(() => {
-    return parseInt(sessionStorage.getItem('currentLevel')) || null;
-  });
+  const [currentLevel, setCurrentLevel] = useState(() =>
+    parseInt(sessionStorage.getItem('currentLevel')) || null
+  );
   const [auth, setAuth] = useState(() => {
     const token    = localStorage.getItem('token');
     const username = localStorage.getItem('username');
     const avatar   = localStorage.getItem('avatar');
     return token ? { token, username, avatar } : null;
   });
-  const [completedLevels, setCompletedLevels] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('completedLevels')) || []; }
-    catch { return []; }
-  });
+  const [completedLevels, setCompletedLevels] = useState([]);
   const [isConnected, setIsConnected]         = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCongrats, setShowCongrats]       = useState(false);
+  const [progressLoading, setProgressLoading] = useState(false);
 
+  // ── Socket ────────────────────────────────────────────────
   useEffect(() => {
     socket.on('connect',    () => setIsConnected(true));
     socket.on('disconnect', () => setIsConnected(false));
     return () => { socket.off('connect'); socket.off('disconnect'); };
   }, []);
 
-  // If already logged in, skip landing
+  // ── Skip landing if already logged in ─────────────────────
   useEffect(() => {
     if (auth && screen === 'landing') setScreen('levels');
   }, []);
+
+  // ── Load progress from DB when auth changes ───────────────
+  useEffect(() => {
+    if (auth?.token) {
+      loadProgressFromDB(auth.token);
+    } else {
+      // Not logged in — use localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('completedLevels')) || [];
+        setCompletedLevels(saved);
+      } catch { setCompletedLevels([]); }
+    }
+  }, [auth]);
+
+  // ── API helpers ───────────────────────────────────────────
+  const loadProgressFromDB = async (token) => {
+    setProgressLoading(true);
+    try {
+      const res  = await fetch(`${API}/api/auth/progress`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCompletedLevels(data.progress || []);
+        console.log(`📊 Loaded progress for user: ${data.progress?.length || 0} levels`);
+      }
+    } catch (err) {
+      console.error('❌ Failed to load progress:', err);
+      // Fall back to localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('completedLevels')) || [];
+        setCompletedLevels(saved);
+      } catch { setCompletedLevels([]); }
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  const saveProgressToDB = async (token, levels) => {
+    try {
+      await fetch(`${API}/api/auth/progress`, {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ completedLevels: levels })
+      });
+      console.log(`💾 Progress saved: ${levels.length} levels`);
+    } catch (err) {
+      console.error('❌ Failed to save progress:', err);
+    }
+  };
 
   // ── Auth ──────────────────────────────────────────────────
   const handleLogin = (authData) => {
@@ -69,6 +121,10 @@ function App() {
     localStorage.removeItem('username');
     localStorage.removeItem('avatar');
     setAuth(null);
+    setCompletedLevels([]);
+    sessionStorage.removeItem('currentScreen');
+    sessionStorage.removeItem('currentLevel');
+    sessionStorage.removeItem('congratsShown');
     transitionTo('landing');
   };
 
@@ -92,12 +148,21 @@ function App() {
 
   const handleBack = () => transitionTo('levels');
 
+  // ── Level Complete ────────────────────────────────────────
   const handleLevelComplete = (levelNum) => {
     const updated = completedLevels.includes(levelNum)
       ? completedLevels
       : [...completedLevels, levelNum];
+
     setCompletedLevels(updated);
-    localStorage.setItem('completedLevels', JSON.stringify(updated));
+
+    // Save to DB if logged in, else localStorage
+    if (auth?.token) {
+      saveProgressToDB(auth.token, updated);
+    } else {
+      localStorage.setItem('completedLevels', JSON.stringify(updated));
+    }
+
     setTimeout(() => transitionTo('levels'), 400);
     if (updated.length === 12) setTimeout(() => setShowCongrats(true), 700);
   };
@@ -105,12 +170,14 @@ function App() {
   const handleResetProgress = () => {
     setCompletedLevels([]);
     localStorage.removeItem('completedLevels');
+    if (auth?.token) saveProgressToDB(auth.token, []);
   };
 
   const handleCompleteAll = () => {
     const all = [1,2,3,4,5,6,7,8,9,10,11,12];
     setCompletedLevels(all);
-    localStorage.setItem('completedLevels', JSON.stringify(all));
+    if (auth?.token) saveProgressToDB(auth.token, all);
+    else localStorage.setItem('completedLevels', JSON.stringify(all));
     setShowCongrats(true);
   };
 
@@ -118,7 +185,7 @@ function App() {
   const levelComponents = {
     1: Level1,  2: Level2,  3: Level3,  4: Level4,
     5: Level5,  6: Level6,  7: Level7,  8: Level8,
-    9: Level9,  10: Level10, 11: Level11, 12: Level12,
+    9: Level9, 10: Level10, 11: Level11, 12: Level12,
   };
 
   const levelProps = {
@@ -129,9 +196,7 @@ function App() {
     initialProgress: {},
     onProgressUpdate: () => {},
     onLevelComplete:  () => {},
-    onComplete: () => {
-      handleLevelComplete(currentLevel);
-    }
+    onComplete: () => handleLevelComplete(currentLevel)
   };
 
   // ── Screens ───────────────────────────────────────────────
@@ -158,6 +223,18 @@ function App() {
         </ProgressProvider>
       )
       : <div>Level not found</div>;
+  }
+
+  // Loading state while fetching progress
+  if (progressLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-spin">⚡</div>
+          <p className="text-white text-xl font-bold">Loading your progress...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
