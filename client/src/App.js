@@ -21,16 +21,20 @@ import Level12 from './levels/Level12';
 const socket = io('http://localhost:4000');
 
 function App() {
-  const [screen, setScreen] = useState(() =>
-    window.location.pathname === '/oauth-success' ? 'oauth-success' : 'landing'
-  );
+  const [screen, setScreen] = useState(() => {
+    if (window.location.pathname === '/oauth-success') return 'oauth-success';
+    const savedScreen = sessionStorage.getItem('currentScreen');
+    return savedScreen || 'landing';
+  });
+  const [currentLevel, setCurrentLevel] = useState(() => {
+    return parseInt(sessionStorage.getItem('currentLevel')) || null;
+  });
   const [auth, setAuth] = useState(() => {
     const token    = localStorage.getItem('token');
     const username = localStorage.getItem('username');
     const avatar   = localStorage.getItem('avatar');
     return token ? { token, username, avatar } : null;
   });
-  const [currentLevel, setCurrentLevel]       = useState(null);
   const [completedLevels, setCompletedLevels] = useState(() => {
     try { return JSON.parse(localStorage.getItem('completedLevels')) || []; }
     catch { return []; }
@@ -74,6 +78,9 @@ function App() {
     setTimeout(() => {
       setScreen(target);
       setCurrentLevel(level);
+      sessionStorage.setItem('currentScreen', target);
+      if (level) sessionStorage.setItem('currentLevel', level);
+      else sessionStorage.removeItem('currentLevel');
       setIsTransitioning(false);
     }, 300);
   };
