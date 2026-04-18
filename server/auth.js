@@ -9,10 +9,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
 // ── User Schema ──────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true, trim: true },
-  email:    { type: String, required: true, unique: true, trim: true },
-  password: { type: String, required: true },
-  createdAt:{ type: Date, default: Date.now }
+  username:   { type: String, required: true, unique: true, trim: true },
+  email:      { type: String, required: true, unique: true, trim: true },
+  password:   { type: String, default: null },  // ✅ null allowed for OAuth
+  avatar:     { type: String, default: null },
+  provider:   { type: String, default: 'local' },
+  providerId: { type: String, default: null },
+  progress:   { type: [Number], default: [] },
+  createdAt:  { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', userSchema);
@@ -35,7 +39,12 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ message: 'Username or email already taken' });
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashed });
+    const user = await User.create({
+      username,
+      email,
+      password: hashed,
+      provider: 'local'   // ✅ mark as local user
+    });
 
     const token = jwt.sign(
       { id: user._id, username: user.username },

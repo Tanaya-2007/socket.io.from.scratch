@@ -6,19 +6,23 @@ const mongoose       = require('mongoose');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// ── User Schema (shared with auth.js) ────────────────────────
-const userSchema = new mongoose.Schema({
-  username:    { type: String, required: true },
-  email:       { type: String, required: true, unique: true },
-  password:    { type: String, default: null },       // null for OAuth users
-  avatar:      { type: String, default: null },       // profile picture
-  provider:    { type: String, default: 'local' },    // 'local' | 'google' | 'github'
-  providerId:  { type: String, default: null },
-  progress:    { type: [Number], default: [] },       // completed levels
-  createdAt:   { type: Date, default: Date.now }
-});
-
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+// ── Reuse User model from auth.js (don't redefine!) ──────────
+// Lazy load to avoid model recompilation error
+const getUserModel = () => {
+  if (mongoose.models.User) return mongoose.models.User;
+  const userSchema = new mongoose.Schema({
+    username:   { type: String, required: true },
+    email:      { type: String, required: true, unique: true },
+    password:   { type: String, default: null },   // null for OAuth users ✅
+    avatar:     { type: String, default: null },
+    provider:   { type: String, default: 'local' },
+    providerId: { type: String, default: null },
+    progress:   { type: [Number], default: [] },
+    createdAt:  { type: Date, default: Date.now }
+  });
+  return mongoose.model('User', userSchema);
+};
+const User = getUserModel();
 
 // ── Google Strategy ───────────────────────────────────────────
 passport.use(new GoogleStrategy({
