@@ -48,10 +48,12 @@ const messageSchema = new mongoose.Schema({
 
 const Message = mongoose.model('Message', messageSchema);
 
-// GLOBAL DATA STORES
+// GLOBAL DATA STORES ✅ all outside io.on('connection')
 const rooms = {};
 const globalUsers = [];
 const userGameData = {};
+const rateLimits = new Map();  
+const onlineUsers = new Set(); 
 
 // Redis Adapter Setup
 const pubClient = createClient({ url: 'redis://localhost:6379' });
@@ -85,10 +87,9 @@ io.on('connection', (socket) => {
     });
   });
 
-    socket.on('send-message', (message) => {
+  socket.on('send-message', (message) => {
     const now = Date.now();
 
-    // Rate limiting (Level 11)
     if (!rateLimits.has(socket.id)) rateLimits.set(socket.id, []);
     const requests = rateLimits.get(socket.id);
     const recent = requests.filter(time => now - time < 10000);
@@ -103,9 +104,9 @@ io.on('connection', (socket) => {
       socket.emit('rate-limit-warning', { remaining: 5 - recent.length });
     }
 
-    // Broadcast to ALL connected clients except the sender
+    // Broadcast to ALL except sender (Level 1)
     socket.broadcast.emit('chat-message', {
-      sender: 'You',
+      sender: 'Other Tab',
       text: message,
       timestamp: new Date().toLocaleTimeString()
     });
@@ -141,6 +142,25 @@ io.on('connection', (socket) => {
       socket.roomName = null;
       socket.playerName = null;
     }
+  });
+
+  // Level 3: Broadcasting ✅ NEW - was missing!
+  socket.on('broadcast-all', (message) => {
+    // Send to EVERYONE including sender
+    io.emit('broadcast-message', {
+      sender: 'Other Tab',
+      text: message,
+      timestamp: new Date().toLocaleTimeString()
+    });
+  });
+
+  socket.on('broadcast-others', (message) => {
+    // Send to EVERYONE except sender
+    socket.broadcast.emit('broadcast-message', {
+      sender: 'Other Tab',
+      text: message,
+      timestamp: new Date().toLocaleTimeString()
+    });
   });
 
   // Level 3: Global Server Chat
@@ -313,12 +333,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Level 11: Rate Limiting & Security
-  const rateLimits = new Map();
+  // Level 11: Rate Limiting (rateLimits Map already declared outside ✅)
 
-  // Level 12: REDIS ADAPTER
-  const onlineUsers = new Set();
-
+  // Level 12: REDIS ADAPTER (onlineUsers Set already declared outside ✅)
   socket.on('redis:join', (data) => {
     socket.username = data.username;
     onlineUsers.add(data.username);
@@ -336,7 +353,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('😢 User disconnected:', socket.id);
 
-    // Clean up Level 2
     if (socket.roomName && rooms[socket.roomName]) {
       const roomName = socket.roomName;
       rooms[roomName].players = rooms[roomName].players.filter(p => p.id !== socket.id);
@@ -344,23 +360,19 @@ io.on('connection', (socket) => {
       if (rooms[roomName].players.length === 0) delete rooms[roomName];
     }
 
-    // Clean up Level 3
     if (socket.userName) {
       const index = globalUsers.indexOf(socket.userName);
       if (index > -1) globalUsers.splice(index, 1);
       io.emit('user-left', { user: socket.userName, users: globalUsers });
     }
 
-    // Clean up Level 5
     if (userGameData[socket.id]) {
       delete userGameData[socket.id];
       console.log(`🗑️ Cleaned up game data for ${socket.id}`);
     }
 
-    // Clean up Level 11
     rateLimits.delete(socket.id);
 
-    // Clean up Level 12
     if (socket.username) {
       onlineUsers.delete(socket.username);
       io.emit('user:left', { username: socket.username, onlineUsers: onlineUsers.size });
