@@ -306,7 +306,9 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                       })}
                     </div>
 
-                    <button onClick={onComplete}>
+                    <button
+                  onClick={() => { onComplete(); setTimeout(() => onBack(), 500); }}
+                  className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black rounded-2xl transition-all duration-300 hover:scale-105"> 
                   Back to Levels
                 </button>
                   </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, initialProgress, onProgressUpdate,onLevelComplete}) {
+// ✅ Fix 1: Added default values for onProgressUpdate and onLevelComplete
+function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, initialProgress = {}, onProgressUpdate = () => {}, onLevelComplete = () => {} }) {
   const [phase, setPhase] = useState('theory');
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -21,22 +22,16 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
     }, 300);
   };
 
-  // Auto-save on every change:
+  // ✅ Fix 2: Guard onProgressUpdate call
   useEffect(() => {
-    onProgressUpdate({
-      completedSteps,
-      currentStep,
-      quizCompleted: quizSubmitted
-    });
+    if (typeof onProgressUpdate === 'function') {
+      onProgressUpdate({
+        completedSteps,
+        currentStep,
+        quizCompleted: quizSubmitted
+      });
+    }
   }, [completedSteps, currentStep, quizSubmitted]);
-  
-  // When quiz submitted:
-  const submitQuiz = () => {
-    setQuizSubmitted(true);
-    const score = calculateScore();
-    onLevelComplete(score); 
-  };
-
 
   const quiz = [
     {
@@ -95,10 +90,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
     socket.on('chat-message', (data) => {
       addMessage(data.sender, data.text, data.timestamp);
     });
-
-    return () => {
-      socket.off('chat-message');
-    };
+    return () => { socket.off('chat-message'); };
   }, [socket]);
 
   useEffect(() => {
@@ -227,8 +219,8 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                     <div className="text-5xl md:text-7xl mb-4 md:mb-6">
                       {(() => {
                         const { correct, total } = calculateScore();
-                        const percentage = (correct / total) * 100;
-                        return percentage === 100 ? '🏆' : percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪';
+                        const pct = (correct / total) * 100;
+                        return pct === 100 ? '🏆' : pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '💪';
                       })()}
                     </div>
                     <h2 className="text-2xl md:text-4xl font-black text-blue-400 mb-3 md:mb-4">Quiz Complete!</h2>
@@ -238,10 +230,10 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                     <p className="text-base md:text-xl text-gray-300 mb-6 md:mb-8">
                       {(() => {
                         const { correct, total } = calculateScore();
-                        const percentage = (correct / total) * 100;
-                        if (percentage === 100) return 'Perfect! WebSocket Master! 🏆';
-                        if (percentage >= 80) return 'Excellent work! 🎉';
-                        if (percentage >= 60) return 'Good job! 👍';
+                        const pct = (correct / total) * 100;
+                        if (pct === 100) return 'Perfect! WebSocket Master! 🏆';
+                        if (pct >= 80)  return 'Excellent work! 🎉';
+                        if (pct >= 60)  return 'Good job! 👍';
                         return 'Keep learning! 💪';
                       })()}
                     </p>
@@ -249,7 +241,7 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                     <div className="space-y-3 md:space-y-4 mb-6 md:mb-8 text-left">
                       {quiz.map((q, qIndex) => {
                         const userAnswer = quizAnswers[qIndex];
-                        const isCorrect = userAnswer === q.correct;
+                        const isCorrect  = userAnswer === q.correct;
                         return (
                           <div key={qIndex} className={`p-3 md:p-4 rounded-lg md:rounded-xl border-2 ${
                             isCorrect ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'
@@ -269,11 +261,9 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                       })}
                     </div>
 
+                    {/* ✅ Fix 3: Back to Levels calls onComplete(1) */}
                     <button
-                      onClick={() => {
-                        onComplete();
-                        setTimeout(() => onBack(), 500);
-                      }}
+                      onClick={() => onComplete(1)}
                       className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl md:rounded-2xl transition-all duration-300 transform hover:scale-105 text-sm md:text-lg"
                     >
                       Back to Levels
@@ -321,8 +311,6 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
           </header>
 
           <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-6xl">
-            
-            {/* Real-World Examples */}
             <div className="mb-8 md:mb-12">
               <h3 className="text-2xl md:text-3xl font-black mb-6 text-blue-400 flex items-center gap-2 md:gap-3">
                 <span>🌍</span> Real-World Examples
@@ -331,28 +319,21 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                 <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
                   <div className="text-3xl md:text-4xl mb-3">💬</div>
                   <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Chat Apps</h4>
-                  <p className="text-xs md:text-sm text-gray-300">
-                    WhatsApp, Discord, Slack - instant messages with no page refresh
-                  </p>
+                  <p className="text-xs md:text-sm text-gray-300">WhatsApp, Discord, Slack - instant messages with no page refresh</p>
                 </div>
                 <div className="bg-gradient-to-br from-cyan-500/20 to-transparent border-2 border-cyan-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-cyan-400 hover:scale-105 transition-all duration-300">
                   <div className="text-3xl md:text-4xl mb-3">🎮</div>
                   <h4 className="text-lg md:text-xl font-black mb-2 text-cyan-300">Multiplayer Games</h4>
-                  <p className="text-xs md:text-sm text-gray-300">
-                    Real-time player movements, actions, and game state updates
-                  </p>
+                  <p className="text-xs md:text-sm text-gray-300">Real-time player movements, actions, and game state updates</p>
                 </div>
                 <div className="bg-gradient-to-br from-blue-500/20 to-transparent border-2 border-blue-500/30 rounded-xl md:rounded-2xl p-4 md:p-6 hover:border-blue-400 hover:scale-105 transition-all duration-300">
                   <div className="text-3xl md:text-4xl mb-3">📊</div>
                   <h4 className="text-lg md:text-xl font-black mb-2 text-blue-300">Live Dashboards</h4>
-                  <p className="text-xs md:text-sm text-gray-300">
-                    Stock prices, analytics, notifications updating instantly
-                  </p>
+                  <p className="text-xs md:text-sm text-gray-300">Stock prices, analytics, notifications updating instantly</p>
                 </div>
               </div>
             </div>
 
-            {/* How It Works */}
             <div className="mb-8 md:mb-12 bg-black/60 border-2 border-blue-500/30 rounded-2xl md:rounded-3xl p-6 md:p-10">
               <h3 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 text-blue-400 flex items-center gap-2 md:gap-3">
                 <span>⚡</span> How WebSockets Work
@@ -373,7 +354,6 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
                     </code>
                   </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/30 rounded-xl p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="text-3xl md:text-4xl">📥</div>
@@ -391,7 +371,6 @@ function Level1({ socket, isConnected, onBack, onComplete, isTransitioning, init
               </div>
             </div>
 
-            {/* Code Example */}
             <div className="mb-8 md:mb-12 bg-black/60 border-2 border-blue-500/30 rounded-2xl md:rounded-3xl overflow-hidden">
               <div className="p-4 md:p-8 border-b border-blue-500/30 bg-blue-500/5">
                 <h3 className="text-2xl md:text-3xl font-black text-blue-400 flex items-center gap-2 md:gap-3">
@@ -513,7 +492,6 @@ io.on('connection', (socket) => {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3">
               <input
                 type="text"

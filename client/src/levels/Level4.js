@@ -360,7 +360,9 @@ if (showQuiz) {
                   })}
                 </div>
 
-                <button onClick={onComplete}>
+                <button
+                  onClick={() => { onComplete(); setTimeout(() => onBack(), 500); }}
+                  className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black rounded-2xl transition-all duration-300 hover:scale-105"> 
                   Back to Levels
                 </button>
               </div>
@@ -556,11 +558,11 @@ game.on('connection', socket => {
                     <pre className="p-4 text-xs md:text-sm overflow-x-auto">
                       <code className="text-cyan-400">{`// Connect to chat
 const chatSocket = 
-  io('localhost:4000/chat');
+  io('localhost:3000/chat');
 
 // Connect to game
 const gameSocket = 
-  io('localhost:4000/game');`}</code>
+  io('localhost:3000/game');`}</code>
                     </pre>
                   </div>
                 </div>
