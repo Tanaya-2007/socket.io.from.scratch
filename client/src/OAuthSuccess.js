@@ -1,25 +1,31 @@
-import { useEffect } from 'react';
-
-// This page handles the redirect from Google/GitHub OAuth
-// URL will be: /oauth-success?token=xxx&username=yyy&avatar=zzz
+import { useEffect, useState } from 'react';
 
 function OAuthSuccess({ onLogin }) {
+  const [status, setStatus] = useState('loading');
+
   useEffect(() => {
     const params   = new URLSearchParams(window.location.search);
     const token    = params.get('token');
-    const username = params.get('username');
-    const avatar   = params.get('avatar');
+    const username = decodeURIComponent(params.get('username') || '');
+    const avatar   = decodeURIComponent(params.get('avatar')   || '');
 
+    // ✅ Only process if token actually exists in URL
     if (token && username) {
-      // Pass auth data up to App
-      onLogin({ token, username, avatar });
-      // Clean URL
-      window.history.replaceState({}, '', '/');
+      setStatus('success');
+      // Small delay so user sees success message
+      setTimeout(() => {
+        onLogin({ token, username, avatar });
+        window.history.replaceState({}, '', '/');
+      }, 500);
     } else {
-      // No token — something went wrong
+      // ✅ No token in URL → just redirect to home silently
+      setStatus('error');
+      window.history.replaceState({}, '', '/');
       window.location.href = '/';
     }
-  }, [onLogin]);
+  }, []);
+
+  if (status === 'error') return null; // ✅ show nothing while redirecting
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">

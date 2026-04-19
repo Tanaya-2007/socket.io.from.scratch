@@ -9,9 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
 // ── User Schema ──────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
-  username:   { type: String, required: true, unique: true, trim: true },
+  username:   { type: String, required: true, trim: true },  // ✅ removed unique!
   email:      { type: String, required: true, unique: true, trim: true },
-  password:   { type: String, default: null },  // ✅ null allowed for OAuth
+  password:   { type: String, default: null },
   avatar:     { type: String, default: null },
   provider:   { type: String, default: 'local' },
   providerId: { type: String, default: null },
@@ -29,21 +29,21 @@ router.post('/register', async (req, res) => {
     if (!username || !email || !password)
       return res.status(400).json({ message: 'All fields are required' });
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email))
       return res.status(400).json({ message: 'Please enter a valid email address' });
 
-    const exists = await User.findOne({ $or: [{ email }, { username }] });
+    // Only check email uniqueness (not username anymore)
+    const exists = await User.findOne({ email });
     if (exists)
-      return res.status(409).json({ message: 'Username or email already taken' });
+      return res.status(409).json({ message: 'Email already registered! Please login.' });
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({
+    const user   = await User.create({
       username,
       email,
       password: hashed,
-      provider: 'local'   // ✅ mark as local user
+      provider: 'local'
     });
 
     const token = jwt.sign(
@@ -70,6 +70,10 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user)
       return res.status(404).json({ message: 'No account found with this email. Please register first!' });
+
+    // Block OAuth users from logging in with password
+    if (user.provider !== 'local' || !user.password)
+      return res.status(401).json({ message: `This email is registered via ${user.provider}. Please use that login method!` });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match)
@@ -108,6 +112,26 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ── Progress Routes ───────────────────────────────────────────
+router.get('/progress', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('progress');
+    res.json({ progress: user?.progress || [] });
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/progress', verifyToken, async (req, res) => {
+  try {
+    const { completedLevels } = req.body;
+    await User.findByIdAndUpdate(req.user.id, { progress: completedLevels });
+    res.json({ success: true });
   } catch {
     res.status(500).json({ message: 'Server error' });
   }
