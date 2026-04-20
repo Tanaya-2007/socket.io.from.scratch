@@ -694,7 +694,6 @@ const gameSocket =
                 <div className="text-2xl md:text-3xl">{currentNs?.icon}</div>
                 <div>
                   <h1 className={`text-lg md:text-2xl font-black ${colors.text}`}>{currentNs?.name.toUpperCase()}</h1>
-                  <p className="text-xs text-gray-400">{onlineUsers.length} online</p>
                 </div>
               </div>
               
