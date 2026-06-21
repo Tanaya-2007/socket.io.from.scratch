@@ -48,7 +48,7 @@ function Level10({ socket, isConnected, onBack, onComplete, isTransitioning }) {
       question: "Where should you store chat messages?",
       options: [
         "In memory (lost on restart)",
-        "In a database (MongoDB, MySQL, PostgreSQL)",
+        "In a database (MongoDB, MySQL, SyllaDB)",
         "In text files",
         "On the client only"
       ],
@@ -360,7 +360,7 @@ function Level10({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                     Scroll up to see old messages - loaded from database
                   </p>
                   <div className="bg-purple-500/10 rounded-lg p-2 text-xs">
-                    <code className="text-purple-400">PostgreSQL</code>
+                    <code className="text-purple-400">SyllaDB</code>
                   </div>
                 </div>
               </div>

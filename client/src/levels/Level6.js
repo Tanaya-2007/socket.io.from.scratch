@@ -35,7 +35,7 @@ function Level6({ socket, isConnected, onBack, onComplete, isTransitioning }) {
       correct: 2
     },
     {
-      question: "What event fires when reconnection succeeds?",
+      question: "Which event fires when reconnection succeeds?",
       options: [
         "socket.on('reconnect')",
         "socket.on('online')",

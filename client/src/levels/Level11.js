@@ -456,7 +456,7 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                     <h4 className="text-xl font-black mb-2 text-yellow-400">Sliding Window</h4>
                     <p className="text-gray-300 mb-3">Track requests in rolling time window</p>
                     <div className="bg-black rounded-lg border border-yellow-500/30 p-3">
-                      <code className="text-yellow-400 text-sm">More fair - prevents burst attacks ✅</code>
+                      <code className="text-yellow-400 text-sm">More fair - prevents burst attacks </code>
                     </div>
                   </div>
                 </div>
@@ -467,7 +467,7 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
                     <h4 className="text-xl font-black mb-2 text-green-400">Token Bucket</h4>
                     <p className="text-gray-300 mb-3">Users get tokens that refill over time</p>
                     <div className="bg-black rounded-lg border border-green-500/30 p-3">
-                      <code className="text-green-400 text-sm">Industry standard - used by AWS, Google ⭐</code>
+                      <code className="text-green-400 text-sm">Industry standard - used by AWS, Google </code>
                     </div>
                   </div>
                 </div>
@@ -485,7 +485,7 @@ function Level11({ socket, isConnected, onBack, onComplete, isTransitioning }) {
               <div className="p-4 md:p-8">
                 <div className="bg-black rounded-xl border border-cyan-500/30 overflow-hidden">
                   <div className="px-4 py-2 bg-black/80 border-b border-cyan-500/30 flex gap-2">
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-cyan-500"></div>
+                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500"></div>
                   </div>
