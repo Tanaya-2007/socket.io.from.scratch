@@ -119,4 +119,4 @@ When Alice (Server-1) sends a message:
 5. Server-2 sends to Bob via WebSocket
 6. Bob sees Alice's message! ✅
 
-**This is PRODUCTION-LEVEL scaling!** 🚀
+**This is PRODUCTION-LEVEL scaling which is known as Horizontal Scaling!** 🚀

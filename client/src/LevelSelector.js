@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats, onCompleteAll, auth, onLogout }) {
+function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConnected, isTransitioning, showCongrats, setShowCongrats, auth, onLogout }) {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
-  const [showResetPopup, setShowResetPopup] = useState(false);
-
+  
   const levels = [
     { num: 1,  title: 'Connection',          icon: '🔌', color: 'blue',   description: 'WebSockets, emit events, real-time responses' },
     { num: 2,  title: 'Rooms',               icon: '🚪', color: 'purple', description: 'Private groups like Kahoot, Discord, Zoom' },
@@ -48,24 +47,7 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
     blue: 'text-blue-400', purple: 'text-purple-400', cyan: 'text-cyan-400',
   }[color] || 'text-cyan-400');
 
-  const handleCompleteAllClick = () => {
-    const allLevels = [1,2,3,4,5,6,7,8,9,10,11,12];
-    localStorage.setItem('completedLevels', JSON.stringify(allLevels));
-    onCompleteAll();
-    sessionStorage.setItem('congratsShown', 'true');
-    setTimeout(() => setShowCongratsPopup(true), 300);
-  };
-
-  const handleResetConfirm = () => {
-    localStorage.removeItem('completedLevels');
-    localStorage.removeItem('currentLevel');
-    sessionStorage.removeItem('congratsShown');
-    setShowResetPopup(false);
-    setShowCongratsPopup(false);
-    onResetProgress();
-  };
-
-  return (
+    return (
     <div className={`min-h-screen bg-[#0a0f1e] text-white relative overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
 
       {/* Background Effects */}
@@ -190,26 +172,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
           })}
         </div>
 
-        {/* Testing Buttons */}
-        <div className="text-center mt-8 space-y-3">
-          <button
-            onClick={handleCompleteAllClick}
-            className="px-6 py-3 bg-green-600/20 hover:bg-green-600/30 border-2 border-green-500/50 hover:border-green-500 text-green-400 font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
-          >
-            ✅ Complete All Levels (Testing)
-          </button>
-          <div>
-            <button
-              onClick={() => setShowResetPopup(true)}
-              disabled={completedLevels.length === 0}
-              className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border-2 border-red-500/50 hover:border-red-500 text-red-400 font-bold rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-red-600/20 disabled:hover:border-red-500/50"
-            >
-              🔄 Reset Progress
-            </button>
-            <p className="text-xs text-gray-600 mt-2">For testing purposes only</p>
-          </div>
-        </div>
-
         {/* Footer */}
         <div className="text-center mt-16 text-gray-500 text-sm">
           <p>Built with ❤️ using Socket.IO & React</p>
@@ -217,35 +179,6 @@ function LevelSelector({ onLevelSelect, completedLevels, onResetProgress, isConn
         </div>
 
       </div>
-
-      {/* Reset Popup */}
-      {showResetPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowResetPopup(false)} />
-          <div className="relative bg-[#0d1425] rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-white/10 z-50"
-            style={{ animation: 'popIn 0.4s ease-out' }}>
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                <span className="text-3xl">🔄</span>
-              </div>
-              <h2 className="text-xl font-black text-white mb-2">Reset your progress?</h2>
-              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                All your completed levels will be cleared.<br/>This can't be undone.
-              </p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowResetPopup(false)}
-                  className="flex-1 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm font-bold rounded-2xl transition-all duration-300">
-                  Cancel
-                </button>
-                <button onClick={handleResetConfirm}
-                  className="flex-1 px-5 py-3 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm font-bold rounded-2xl transition-all duration-300">
-                  Yes, Reset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Congrats Popup */}
       {showCongratsPopup && (
