@@ -46,7 +46,8 @@ function Level4({ socket, isConnected, onBack, onComplete, isTransitioning }) {
   useEffect(() => {
     if (selectedNamespace && username) {
       const ns = namespaces.find(n => n.id === selectedNamespace);
-      socketRef.current = io(`http://localhost:4000${ns.path}`);
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+      socketRef.current = io(`${API_URL}${ns.path}`);
 
       socketRef.current.emit('join-namespace', { username });
 

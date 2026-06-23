@@ -5,6 +5,8 @@ const jwt            = require('jsonwebtoken');
 const mongoose       = require('mongoose');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:4000';
 
 // ── Reuse User model from auth.js (don't redefine!) ──────────
 // Lazy load to avoid model recompilation error
@@ -28,7 +30,7 @@ const User = getUserModel();
 passport.use(new GoogleStrategy({
   clientID:     process.env.GOOGLE_CLIENT_ID     || 'YOUR_GOOGLE_CLIENT_ID',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'YOUR_GOOGLE_CLIENT_SECRET',
-  callbackURL:  'http://localhost:4000/api/auth/google/callback'
+  callbackURL:  `${SERVER_URL}/api/auth/google/callback`
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     // Check if user already exists
@@ -70,7 +72,7 @@ passport.use(new GoogleStrategy({
 passport.use(new GitHubStrategy({
   clientID:     process.env.GITHUB_CLIENT_ID     || 'YOUR_GITHUB_CLIENT_ID',
   clientSecret: process.env.GITHUB_CLIENT_SECRET || 'YOUR_GITHUB_CLIENT_SECRET',
-  callbackURL:  'http://localhost:4000/api/auth/github/callback',
+  callbackURL:  `${SERVER_URL}/api/auth/github/callback`,
   scope:        ['user:email']
 }, async (accessToken, refreshToken, profile, done) => {
   try {
@@ -125,7 +127,7 @@ const setupOAuthRoutes = (app) => {
   );
 
   app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: 'http://localhost:3000/login?error=google_failed' }),
+    passport.authenticate('google', { failureRedirect: `${CLIENT_URL}/login?error=google_failed` }),
     (req, res) => {
       const token = jwt.sign(
         { id: req.user._id, username: req.user.username },
@@ -133,7 +135,7 @@ const setupOAuthRoutes = (app) => {
         { expiresIn: '7d' }
       );
       // Redirect to frontend with token
-      res.redirect(`http://localhost:3000/oauth-success?token=${token}&username=${encodeURIComponent(req.user.username)}&avatar=${encodeURIComponent(req.user.avatar || '')}`);
+      res.redirect(`${CLIENT_URL}/oauth-success?token=${token}&username=${encodeURIComponent(req.user.username)}&avatar=${encodeURIComponent(req.user.avatar || '')}`);
     }
   );
 
@@ -143,14 +145,14 @@ const setupOAuthRoutes = (app) => {
   );
 
   app.get('/api/auth/github/callback',
-    passport.authenticate('github', { failureRedirect: 'http://localhost:3000/login?error=github_failed' }),
+    passport.authenticate('github', { failureRedirect: `${CLIENT_URL}/login?error=github_failed` }),
     (req, res) => {
       const token = jwt.sign(
         { id: req.user._id, username: req.user.username },
         JWT_SECRET,
         { expiresIn: '7d' }
       );
-      res.redirect(`http://localhost:3000/oauth-success?token=${token}&username=${encodeURIComponent(req.user.username)}&avatar=${encodeURIComponent(req.user.avatar || '')}`);
+      res.redirect(`${CLIENT_URL}/oauth-success?token=${token}&username=${encodeURIComponent(req.user.username)}&avatar=${encodeURIComponent(req.user.avatar || '')}`);
     }
   );
 

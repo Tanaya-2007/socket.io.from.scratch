@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
 function LoginPage({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [form, setForm]             = useState({ username: '', email: '', password: '' });
@@ -28,7 +30,7 @@ function LoginPage({ onLogin }) {
         ? { username: form.username, email: form.email, password: form.password }
         : { email: form.email, password: form.password };
 
-      const res  = await fetch(`http://localhost:4000${url}`, {
+      const res  = await fetch(`${API_URL}${url}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body)
@@ -77,14 +79,14 @@ function LoginPage({ onLogin }) {
           {/* OAuth Buttons */}
           <div className="space-y-3 mb-6">
             <a
-              href="http://localhost:4000/api/auth/google"
+              href={`${API_URL}/api/auth/google`}
               className="flex items-center justify-center gap-3 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 rounded-xl text-white font-bold transition-all duration-300 hover:scale-[1.02]"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
               Continue with Google
             </a>
             <a
-              href="http://localhost:4000/api/auth/github"
+              href={`${API_URL}/api/auth/github`}
               className="flex items-center justify-center gap-3 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 rounded-xl text-white font-bold transition-all duration-300 hover:scale-[1.02]"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

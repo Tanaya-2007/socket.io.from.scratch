@@ -17,8 +17,9 @@ import Level10 from './levels/Level10';
 import Level11 from './levels/Level11';
 import Level12 from './levels/Level12';
 
-const socket = io('http://localhost:4000');
-const API    = 'http://localhost:4000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const socket = io(API_URL);
+const API    = API_URL;
 
 function App() {
 

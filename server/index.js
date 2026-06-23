@@ -12,28 +12,30 @@ const server = http.createServer(app);
 
 const { router: authRouter } = require('./auth');
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
 app.use('/api/auth', authRouter);
 
 const session = require('express-session');
 const { setupOAuthRoutes, passport } = require('./oauth');
 
-app.use(session({ secret: 'session_secret', resave: false, saveUninitialized: false }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'session_secret',
+  resave: false,
+  saveUninitialized: false
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 setupOAuthRoutes(app);
 
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     methods: ["GET", "POST"]
   }
 });
 
-app.use(cors());
-
 // MONGODB CONNECTION
-mongoose.connect('mongodb://localhost:27017/socketio-course')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/socketio-course')
 .then(() => console.log('✅ MongoDB Connected!'))
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
@@ -56,7 +58,7 @@ const rateLimits = new Map();
 const onlineUsers = new Set(); 
 
 // Redis Adapter Setup
-const pubClient = createClient({ url: 'redis://localhost:6379' });
+const pubClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()])
