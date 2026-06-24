@@ -10,18 +10,24 @@ const mongoose = require('mongoose');
 const app = express();
 const server = http.createServer(app);
 
+// Redis clients initialized early for rate limiting reference
+const pubClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+const subClient = pubClient.duplicate();
+
 const { router: authRouter } = require('./auth');
 app.use(express.json());
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
 app.use('/api/auth', authRouter);
 
 const session = require('express-session');
+const MongooseStore = require('./lib/MongooseStore');
 const { setupOAuthRoutes, passport } = require('./oauth');
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'session_secret',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: new MongooseStore()
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -39,16 +45,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/socketio-
 .then(() => console.log('✅ MongoDB Connected!'))
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// MESSAGE SCHEMA
-const messageSchema = new mongoose.Schema({
-  sender: { type: String, required: true },
-  text: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now },
-  seen: { type: Boolean, default: false },
-  seenAt: { type: Date }
-});
-
-const Message = mongoose.model('Message', messageSchema);
+// MESSAGE MODEL
+const Message = require('./models/Message');
 
 // GLOBAL DATA STORES ✅ all outside io.on('connection')
 const rooms = {};
@@ -57,9 +55,52 @@ const userGameData = {};
 const rateLimits = new Map();  
 const onlineUsers = new Set(); 
 
+// Distributed Rate Limiting using Redis with In-Memory fallback
+const getMessageRateLimit = async (socketId) => {
+  const limitKey = `ratelimit:${socketId}`;
+  const limitWindow = 10; // seconds
+  const limitMax = 5;
+
+  if (pubClient.isReady) {
+    try {
+      const now = Date.now();
+      const windowStart = now - (limitWindow * 1000);
+
+      // Add request timestamp to the sorted set in Redis
+      await pubClient.zAdd(limitKey, { score: now, value: String(now) });
+      // Remove timestamps older than sliding window
+      await pubClient.zRemRangeByScore(limitKey, 0, windowStart);
+      // Retrieve request count in this window
+      const count = await pubClient.zCard(limitKey);
+      // Auto expire rate limit record in Redis
+      await pubClient.expire(limitKey, limitWindow);
+
+      return {
+        count,
+        max: limitMax,
+        exceeded: count > limitMax
+      };
+    } catch (err) {
+      console.error('❌ Redis Rate Limiter Error:', err);
+    }
+  }
+
+  // Fallback: In-Memory Sliding Window
+  const now = Date.now();
+  if (!rateLimits.has(socketId)) rateLimits.set(socketId, []);
+  const requests = rateLimits.get(socketId);
+  const recent = requests.filter(time => now - time < (limitWindow * 1000));
+  recent.push(now);
+  rateLimits.set(socketId, recent);
+
+  return {
+    count: recent.length,
+    max: limitMax,
+    exceeded: recent.length > limitMax
+  };
+}; 
+
 // Redis Adapter Setup
-const pubClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()])
   .then(() => {
@@ -89,21 +130,17 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send-message', (message) => {
-    const now = Date.now();
+  socket.on('send-message', async (message) => {
+    const limiter = await getMessageRateLimit(socket.id);
 
-    if (!rateLimits.has(socket.id)) rateLimits.set(socket.id, []);
-    const requests = rateLimits.get(socket.id);
-    const recent = requests.filter(time => now - time < 10000);
-
-    if (recent.length >= 5) {
+    if (limiter.exceeded) {
       socket.emit('rate-limit-exceeded', { retryAfter: 10000 });
       return;
     }
-    recent.push(now);
-    rateLimits.set(socket.id, recent);
-    if (recent.length >= 4) {
-      socket.emit('rate-limit-warning', { remaining: 5 - recent.length });
+    if (limiter.count >= limiter.max) {
+      socket.emit('rate-limit-warning', { remaining: 0 });
+    } else if (limiter.count >= limiter.max - 1) {
+      socket.emit('rate-limit-warning', { remaining: 1 });
     }
 
     // Broadcast to ALL except sender (Level 1)

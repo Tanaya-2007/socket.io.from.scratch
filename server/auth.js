@@ -7,19 +7,8 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// ── User Schema ──────────────────────────────────────────────
-const userSchema = new mongoose.Schema({
-  username:   { type: String, required: true, trim: true },  // ✅ removed unique!
-  email:      { type: String, required: true, unique: true, trim: true },
-  password:   { type: String, default: null },
-  avatar:     { type: String, default: null },
-  provider:   { type: String, default: 'local' },
-  providerId: { type: String, default: null },
-  progress:   { type: [Number], default: [] },
-  createdAt:  { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
+// ── central User Model ───────────────────────────────────────
+const User = require('./models/User');
 
 // ── REGISTER ─────────────────────────────────────────────────
 router.post('/register', async (req, res) => {

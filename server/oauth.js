@@ -8,23 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:4000';
 
-// ── Reuse User model from auth.js (don't redefine!) ──────────
-// Lazy load to avoid model recompilation error
-const getUserModel = () => {
-  if (mongoose.models.User) return mongoose.models.User;
-  const userSchema = new mongoose.Schema({
-    username:   { type: String, required: true },
-    email:      { type: String, required: true, unique: true },
-    password:   { type: String, default: null },   // null for OAuth users ✅
-    avatar:     { type: String, default: null },
-    provider:   { type: String, default: 'local' },
-    providerId: { type: String, default: null },
-    progress:   { type: [Number], default: [] },
-    createdAt:  { type: Date, default: Date.now }
-  });
-  return mongoose.model('User', userSchema);
-};
-const User = getUserModel();
+// ── central User Model ───────────────────────────────────────
+const User = require('./models/User');
 
 // ── Google Strategy ───────────────────────────────────────────
 passport.use(new GoogleStrategy({
